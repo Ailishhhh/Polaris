@@ -1,4 +1,4 @@
--- Ascend — Supabase schema
+-- Polaris — Supabase schema
 -- Memory + structure + accountability + progress for the AI mentor.
 -- Run this in the Supabase SQL editor. Every table is owned by auth.uid()
 -- and protected by row-level security.
