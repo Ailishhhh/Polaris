@@ -17,13 +17,13 @@ ChatGPT answers and forgets. Polaris remembers, structures, and chases.
 
 | Layer | Choice |
 | --- | --- |
-| App | Expo (SDK 56) + expo-router, TypeScript, Expo Go compatible |
+| App | Expo (SDK 54) + expo-router, TypeScript, Expo Go compatible |
 | UI | Design-system-first: theme tokens (light + dark), Fraunces + Inter, Reanimated motion, FlashList, react-native-markdown-display |
 | State | Zustand |
 | Auth + DB (memory) | Supabase (anonymous + email auth, Postgres with RLS) |
 | AI backend | Node/Express on Render calling Google Gemini (`gemini-2.5-flash`) with **SSE streaming** |
 
-> Note: the spec called for SDK 54 to match our other app, but the current Expo Go release runs SDK 56, so the project targets 56. Same architecture, just current.
+> Built on Expo SDK 54 for broad Expo Go compatibility (the version available on the stores).
 
 ## Repo layout
 
