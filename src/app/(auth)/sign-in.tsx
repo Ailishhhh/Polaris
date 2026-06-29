@@ -1,132 +1,193 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { Button, MentorAvatar, Screen, Text } from '@/components/ui';
+import { AuroraBackground, Button, Divider, GlassCard, MentorAvatar, Text } from '@/components/ui';
 import { useAuth } from '@/store';
 import { isConfigured } from '@/lib/config';
+import { haptics } from '@/lib/haptics';
 
 /**
- * Warm first-run welcome. Growth-first: one tap to start (anonymous), with an
- * optional email path for people who want to keep their journey across devices.
+ * Welcome / auth — the first taste of "Aurora Glass": a living gradient with a
+ * frosted-glass panel floating over it. One-tap guest start, Continue with
+ * Google, or email. Calm, premium, alive.
  */
 export default function SignIn() {
   const theme = useTheme();
   const router = useRouter();
-  const { startAnonymously, signInWithPassword, signUpWithPassword } = useAuth();
+  const { startAnonymously, signInWithGoogle, signInWithPassword, signUpWithPassword } = useAuth();
 
   const [mode, setMode] = useState<'welcome' | 'email'>('welcome');
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState<null | 'guest' | 'google' | 'email'>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const run = async (fn: () => Promise<void>) => {
+  const run = async (which: 'guest' | 'google' | 'email', fn: () => Promise<void>) => {
     setError(null);
-    setLoading(true);
+    setBusy(which);
     try {
       await fn();
       router.replace('/');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
-      setLoading(false);
+      setBusy(null);
     }
   };
 
   return (
-    <Screen edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, justifyContent: 'space-between', paddingVertical: theme.spacing.xxl }}
-      >
-        <Animated.View entering={FadeIn.duration(500)} style={{ marginTop: theme.spacing.huge }}>
-          <MentorAvatar size={64} />
-          <Text variant="display" style={{ marginTop: theme.spacing.xl }}>
-            Polaris
-          </Text>
-          <Text variant="body" color="textSecondary" style={{ marginTop: theme.spacing.sm, maxWidth: 320 }}>
-            Your AI mentor for any goal. Pick a destination — trading, art, fitness, code, exams,
-            anything — and Polaris guides you from 0 to 100, one day at a time.
-          </Text>
-        </Animated.View>
-
-        {!isConfigured ? (
-          <View
-            style={{
-              backgroundColor: theme.colors.accentSoft,
-              borderRadius: theme.radii.md,
-              padding: theme.spacing.lg,
-            }}
-          >
-            <Text variant="callout" tint={theme.colors.accentSoftText}>
-              Supabase isn&apos;t configured yet. Add your keys to .env (see .env.example) to enable
-              sign-in.
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <AuroraBackground />
+      <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1, justifyContent: 'space-between', padding: theme.spacing.xl }}
+        >
+          {/* Brand */}
+          <Animated.View entering={FadeIn.duration(600)} style={{ marginTop: theme.spacing.huge }}>
+            <MentorAvatar size={66} />
+            <Text variant="display" style={{ marginTop: theme.spacing.xl }}>
+              Polaris
             </Text>
-          </View>
-        ) : null}
+            <Text variant="body" color="textSecondary" style={{ marginTop: theme.spacing.sm, maxWidth: 320 }}>
+              Your AI mentor for any goal. It learns who you are, maps the path, and walks it with
+              you — from 0 to 100.
+            </Text>
+          </Animated.View>
 
-        <Animated.View entering={FadeInUp.duration(500).delay(120)} style={{ gap: theme.spacing.md }}>
-          {mode === 'welcome' ? (
-            <>
-              <Button
-                label="Start your journey"
-                fullWidth
-                loading={loading}
-                onPress={() => run(startAnonymously)}
-              />
-              <Button
-                label="I have an account"
-                variant="ghost"
-                fullWidth
-                onPress={() => setMode('email')}
-              />
-            </>
-          ) : (
-            <View style={{ gap: theme.spacing.md }}>
-              <Field
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-              />
-              <Field placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-              <Button
-                label={isSignUp ? 'Create account' : 'Sign in'}
-                fullWidth
-                loading={loading}
-                onPress={() =>
-                  run(() =>
-                    isSignUp
-                      ? signUpWithPassword(email.trim(), password)
-                      : signInWithPassword(email.trim(), password),
-                  )
-                }
-              />
-              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
-                <Text variant="callout" color="textSecondary">
-                  {isSignUp ? 'Already have an account?' : 'New here?'}
-                </Text>
-                <Text variant="callout" color="accent" onPress={() => setIsSignUp((v) => !v)}>
-                  {isSignUp ? 'Sign in' : 'Create one'}
+          {/* Glass auth panel */}
+          <Animated.View entering={FadeInUp.duration(600).delay(120)}>
+            {!isConfigured ? (
+              <View
+                style={{
+                  backgroundColor: theme.colors.accentSoft,
+                  borderRadius: theme.radii.md,
+                  padding: theme.spacing.lg,
+                  marginBottom: theme.spacing.md,
+                }}
+              >
+                <Text variant="callout" tint={theme.colors.accentSoftText}>
+                  Supabase isn&apos;t configured yet. Add your keys to .env to enable sign-in.
                 </Text>
               </View>
-              <Text variant="caption" color="textMuted" center onPress={() => setMode('welcome')}>
-                Back
-              </Text>
-            </View>
-          )}
+            ) : null}
 
-          {error ? (
-            <Text variant="caption" tint={theme.colors.danger} center>
-              {error}
+            <GlassCard>
+              {mode === 'welcome' ? (
+                <View style={{ gap: theme.spacing.md }}>
+                  <Button
+                    label="Start your journey"
+                    fullWidth
+                    loading={busy === 'guest'}
+                    onPress={() => run('guest', startAnonymously)}
+                  />
+                  <GoogleButton loading={busy === 'google'} onPress={() => run('google', signInWithGoogle)} />
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 2 }}>
+                    <View style={{ flex: 1 }}>
+                      <Divider />
+                    </View>
+                    <Text variant="caption" color="textMuted" style={{ marginHorizontal: theme.spacing.md }}>
+                      or
+                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Divider />
+                    </View>
+                  </View>
+
+                  <Pressable
+                    onPress={() => {
+                      haptics.selection();
+                      setMode('email');
+                    }}
+                    style={{ alignItems: 'center', paddingVertical: theme.spacing.xs }}
+                  >
+                    <Text variant="subheading" color="text">
+                      Continue with email
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={{ gap: theme.spacing.md }}>
+                  <Field placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+                  <Field placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
+                  <Button
+                    label={isSignUp ? 'Create account' : 'Sign in'}
+                    fullWidth
+                    loading={busy === 'email'}
+                    onPress={() =>
+                      run('email', () =>
+                        isSignUp
+                          ? signUpWithPassword(email.trim(), password)
+                          : signInWithPassword(email.trim(), password),
+                      )
+                    }
+                  />
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+                    <Text variant="callout" color="textSecondary">
+                      {isSignUp ? 'Already have an account?' : 'New here?'}
+                    </Text>
+                    <Text variant="callout" color="accent" onPress={() => setIsSignUp((v) => !v)}>
+                      {isSignUp ? 'Sign in' : 'Create one'}
+                    </Text>
+                  </View>
+                  <Text variant="caption" color="textMuted" center onPress={() => setMode('welcome')}>
+                    Back
+                  </Text>
+                </View>
+              )}
+
+              {error ? (
+                <Text variant="caption" tint={theme.colors.danger} center style={{ marginTop: theme.spacing.md }}>
+                  {error}
+                </Text>
+              ) : null}
+            </GlassCard>
+
+            <Text variant="caption" color="textMuted" center style={{ marginTop: theme.spacing.lg }}>
+              Free to start. No pressure, no spam.
             </Text>
-          ) : null}
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </Screen>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+function GoogleButton({ onPress, loading }: { onPress: () => void; loading: boolean }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={() => {
+        haptics.light();
+        onPress();
+      }}
+      disabled={loading}
+      style={{
+        height: 48,
+        borderRadius: theme.radii.pill,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.borderStrong,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.sm,
+        opacity: loading ? 0.6 : 1,
+      }}
+    >
+      <Ionicons name="logo-google" size={18} color={theme.colors.text} />
+      <Text variant="subheading" color="text">
+        Continue with Google
+      </Text>
+    </Pressable>
   );
 }
 

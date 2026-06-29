@@ -12,4 +12,6 @@ export { MentorAvatar } from './MentorAvatar';
 export { Screen } from './Screen';
 export { Skeleton } from './Skeleton';
 export { AmbientBackground } from './AmbientBackground';
+export { AuroraBackground } from './AuroraBackground';
+export { GlassCard } from './GlassCard';
 export { Appear } from './Appear';
