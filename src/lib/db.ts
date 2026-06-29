@@ -186,13 +186,14 @@ export async function saveRoadmap(
 
   for (let pi = 0; pi < draft.phases.length; pi++) {
     const p = draft.phases[pi];
+    if (!p?.title?.trim()) continue; // guard: never insert a titleless phase
     const { data: phase } = await supabase
       .from('phases')
       .insert({
         roadmap_id: roadmap.id,
         user_id: userId,
         title: p.title,
-        description: p.description,
+        description: p.description ?? '',
         order: pi,
         status: pi === 0 ? 'active' : 'locked',
       })
@@ -200,14 +201,16 @@ export async function saveRoadmap(
       .single()
       .throwOnError();
 
-    const milestoneRows = p.milestones.map((m, mi) => ({
-      phase_id: phase.id,
-      user_id: userId,
-      title: m.title,
-      description: m.description,
-      order: mi,
-      status: pi === 0 && mi === 0 ? 'active' : 'locked',
-    }));
+    const milestoneRows = (p.milestones ?? [])
+      .filter((m) => m?.title?.trim()) // guard: drop titleless milestones
+      .map((m, mi) => ({
+        phase_id: phase.id,
+        user_id: userId,
+        title: m.title,
+        description: m.description ?? '',
+        order: mi,
+        status: pi === 0 && mi === 0 ? 'active' : 'locked',
+      }));
     if (milestoneRows.length) {
       await supabase.from('milestones').insert(milestoneRows).throwOnError();
     }

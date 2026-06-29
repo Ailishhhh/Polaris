@@ -70,6 +70,68 @@ function partOfDay(): string {
   return 'evening';
 }
 
+const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+
+/**
+ * Normalize a roadmap from ANY provider into a guaranteed-valid shape. Fallback
+ * models (Groq/OpenRouter) don't enforce our JSON schema, so we defensively
+ * coerce, accept common variants (e.g. milestones as plain strings), and DROP
+ * anything without a title — so a malformed response can never violate a DB
+ * NOT NULL constraint. Throws only if there's nothing usable.
+ */
+function normalizeRoadmap(raw: unknown): {
+  overview: string;
+  phases: { title: string; description: string; milestones: { title: string; description: string }[] }[];
+} {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const overview = str(r.overview) || 'Your journey, mapped step by step.';
+  const rawPhases = Array.isArray(r.phases) ? r.phases : [];
+
+  const phases = rawPhases
+    .map((p) => {
+      const po = (p ?? {}) as Record<string, unknown>;
+      const title = str(po.title) || str(po.name) || str(po.phase);
+      const rawMs = Array.isArray(po.milestones) ? po.milestones : [];
+      const milestones = rawMs
+        .map((m) => {
+          if (typeof m === 'string') return { title: m.trim(), description: '' };
+          const mo = (m ?? {}) as Record<string, unknown>;
+          return {
+            title: str(mo.title) || str(mo.name) || str(mo.milestone),
+            description: str(mo.description) || str(mo.detail),
+          };
+        })
+        .filter((m) => m.title.length > 0);
+      return { title, description: str(po.description), milestones };
+    })
+    .filter((p) => p.title.length > 0 && p.milestones.length > 0);
+
+  if (phases.length === 0) {
+    throw new Error('Roadmap had no usable phases/milestones');
+  }
+  return { overview, phases };
+}
+
+function normalizeTasks(raw: unknown): {
+  tasks: { title: string; detail: string; milestoneHint: string | null }[];
+} {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const rawTasks = Array.isArray(r.tasks) ? r.tasks : [];
+  const tasks = rawTasks
+    .map((t) => {
+      if (typeof t === 'string') return { title: t.trim(), detail: '', milestoneHint: null };
+      const to = (t ?? {}) as Record<string, unknown>;
+      return {
+        title: str(to.title) || str(to.task) || str(to.name),
+        detail: str(to.detail) || str(to.description),
+        milestoneHint: str(to.milestoneHint) || null,
+      };
+    })
+    .filter((t) => t.title.length > 0)
+    .slice(0, 5);
+  return { tasks };
+}
+
 /**
  * POST /api/chat — streams the mentor's reply over SSE.
  * Body: { memory, history, message }
@@ -138,7 +200,7 @@ api.post('/roadmap', async (req: Request, res: Response) => {
       context ?? {},
     )}\n\nDesign the roadmap now.`;
     const data = await generateJson(roadmapSystemPrompt(), userPrompt, roadmapSchema);
-    res.json(data);
+    res.json(normalizeRoadmap(data));
   } catch (err) {
     console.error('[roadmap] error', err);
     res.status(502).json({ error: 'Failed to generate roadmap' });
@@ -161,7 +223,7 @@ api.post('/tasks', async (req: Request, res: Response) => {
       'Generate the 3 daily tasks now.',
       tasksSchema,
     );
-    res.json(data);
+    res.json(normalizeTasks(data));
   } catch (err) {
     console.error('[tasks] error', err);
     res.status(502).json({ error: 'Failed to generate tasks' });

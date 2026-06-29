@@ -88,7 +88,21 @@ Rules for the roadmap:
 - Each phase has 2 to 4 concrete milestones. A milestone is a checkable achievement (not a vague theme).
 - Calibrate scope to their stated level and weekly time. Be ambitious but achievable.
 - The "overview" is a single inspiring sentence framing the whole journey in their words.
-- Output ONLY the structured JSON requested. No commentary.`;
+
+Return ONLY valid JSON in EXACTLY this shape (no other keys, no commentary):
+{
+  "overview": "string",
+  "phases": [
+    {
+      "title": "string",
+      "description": "string",
+      "milestones": [
+        { "title": "string", "description": "string" }
+      ]
+    }
+  ]
+}
+Every phase AND every milestone MUST have a non-empty "title" and "description" string.`;
 }
 
 export function tasksSystemPrompt(memory: MentorMemory): string {
@@ -96,7 +110,15 @@ export function tasksSystemPrompt(memory: MentorMemory): string {
 
 ${buildMemoryContext(memory)}
 
-Generate 3 small daily tasks for TODAY that move this person toward their current phase and active milestones. Each task should be doable today given their time, specific, and action-oriented (start with a verb). Include an optional short detail. Output ONLY the structured JSON requested.`;
+Generate 3 small daily tasks for TODAY that move this person toward their current phase and active milestones. Each task should be doable today given their time, specific, and action-oriented (start with a verb).
+
+Return ONLY valid JSON in EXACTLY this shape (no other keys, no commentary):
+{
+  "tasks": [
+    { "title": "string", "detail": "string", "milestoneHint": "string" }
+  ]
+}
+Every task MUST have a non-empty "title" string.`;
 }
 
 export function checkinSystemPrompt(memory: MentorMemory): string {
