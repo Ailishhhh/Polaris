@@ -19,3 +19,12 @@ services:
         value: production
       - key: CORS_ORIGINS
         value: '*'
+      # Free Groq fallback as PRIMARY (Gemini free tier is only ~20/day).
+      - key: FALLBACK_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: FALLBACK_MODEL
+        value: llama-3.3-70b-versatile
+      - key: LLM_PRIMARY
+        value: fallback
+      - key: FALLBACK_API_KEY
+        sync: false
