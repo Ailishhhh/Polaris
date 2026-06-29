@@ -46,7 +46,7 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiUrl": "http://localhost:8787"
+      "apiUrl": "https://polaris-mentor-api.onrender.com"
     }
   }
 }
