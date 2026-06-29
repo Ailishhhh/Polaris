@@ -48,7 +48,7 @@ export function MilestoneCoachSheet({
       <Animated.View entering={FadeIn.duration(180)} style={{ flex: 1, backgroundColor: theme.colors.scrim }}>
         <Pressable style={{ flex: 1 }} onPress={onClose} />
         <Animated.View
-          entering={SlideInDown.springify().damping(22).mass(0.8)}
+          entering={SlideInDown.duration(280)}
           style={{
             backgroundColor: theme.colors.surface,
             borderTopLeftRadius: theme.radii.xl,
