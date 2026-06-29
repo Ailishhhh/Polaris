@@ -1,7 +1,7 @@
 import { fetch as expoFetch } from 'expo/fetch';
 import { config } from './config';
 import { getAccessToken } from './supabase';
-import type { ChatRole, GoalContext, MentorMemory, Roadmap } from '@/types';
+import type { ChatRole, GoalContext, MentorMemory, OnboardingSketch, Roadmap } from '@/types';
 
 /**
  * Client for the Polaris mentor backend (Node/Express on Render). The chat
@@ -33,6 +33,8 @@ export interface StreamHandlers {
   onToken: (chunk: string) => void;
   onDone?: (full: string) => void;
   onError?: (err: Error) => void;
+  /** Non-token/error SSE events (e.g. the onboarding 'profile' event). */
+  onEvent?: (evt: { type: string; [key: string]: unknown }) => void;
   signal?: AbortSignal;
 }
 
@@ -92,6 +94,8 @@ async function consumeStream(
             handlers.onToken(evt.value);
           } else if (evt.type === 'error') {
             throw new ApiError(evt.message ?? 'stream error');
+          } else if (evt.type !== 'done') {
+            handlers.onEvent?.(evt as { type: string; [key: string]: unknown });
           }
         } catch (e) {
           if (e instanceof ApiError) throw e;
@@ -136,6 +140,25 @@ export function streamCoach(
 /** Reflective progress insight for the Progress surface (streamed). */
 export function streamInsight(memory: MentorMemory, handlers: StreamHandlers): Promise<string> {
   return consumeStream('/api/insight', { memory }, handlers);
+}
+
+/**
+ * Organic onboarding: streams a natural reply and surfaces the silently-inferred
+ * profile sketch via `onProfile` as the mentor learns who the user is.
+ */
+export function streamOnboarding(
+  params: { history: ChatTurn[]; message: string },
+  handlers: StreamHandlers & { onProfile?: (sketch: OnboardingSketch) => void },
+): Promise<string> {
+  return consumeStream('/api/onboard', params, {
+    ...handlers,
+    onEvent: (evt) => {
+      if (evt.type === 'profile' && evt.profile) {
+        handlers.onProfile?.(evt.profile as OnboardingSketch);
+      }
+      handlers.onEvent?.(evt);
+    },
+  });
 }
 
 export interface RoadmapDraftPhase {

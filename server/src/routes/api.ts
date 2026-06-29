@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import {
   generateJson,
   roadmapSchema,
+  sketchSchema,
   streamText,
   tasksSchema,
   toContents,
@@ -10,8 +11,10 @@ import {
   checkinSystemPrompt,
   briefingSystemPrompt,
   coachSystemPrompt,
+  extractSketchPrompt,
   insightSystemPrompt,
   mentorSystemPrompt,
+  onboardSystemPrompt,
   roadmapSystemPrompt,
   tasksSystemPrompt,
 } from '../prompts.js';
@@ -247,4 +250,63 @@ api.post('/insight', async (req: Request, res: Response) => {
     return;
   }
   await streamSSE(res, insightSystemPrompt(memory), 'Reflect on my progress so far.', 'insight');
+});
+
+
+/**
+ * POST /api/onboard — organic onboarding. Streams a natural conversational
+ * reply, then emits a structured profile-sketch extraction event so the client
+ * can quietly learn the user's goal/level/time without a form.
+ * Body: { history: ChatTurn[], message: string }  (SSE stream)
+ *
+ * Events: { type: 'token', value } ...  then { type: 'profile', profile } then { type: 'done' }
+ */
+api.post('/onboard', async (req: Request, res: Response) => {
+  const { history, message } = req.body as { history: ChatTurn[]; message: string };
+  if (!message) {
+    res.status(400).json({ error: 'message is required' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  const send = (obj: unknown) => res.write(`data: ${JSON.stringify(obj)}\n\n`);
+  const ping = setInterval(() => res.write(': ping\n\n'), 15000);
+
+  const turns: ChatTurn[] = [...recentHistory(history), { role: 'user', content: message }];
+
+  try {
+    // 1) Stream the natural reply.
+    const reply = await streamText(onboardSystemPrompt(), toContents(turns), (token) =>
+      send({ type: 'token', value: token }),
+    );
+
+    // 2) Silently extract what we now know (non-fatal if it fails).
+    try {
+      const transcript = [...turns, { role: 'assistant' as const, content: reply }]
+        .map((t) => `${t.role === 'assistant' ? 'Polaris' : 'User'}: ${t.content}`)
+        .join('\n');
+      const profile = await generateJson(
+        extractSketchPrompt(),
+        `Conversation so far:\n${transcript}\n\nExtract what is known now.`,
+        sketchSchema,
+      );
+      send({ type: 'profile', profile });
+    } catch (extractErr) {
+      console.warn('[onboard] extraction failed (non-fatal)', extractErr);
+    }
+
+    send({ type: 'done' });
+    res.write('data: [DONE]\n\n');
+  } catch (err) {
+    console.error('[onboard] error', err);
+    send({ type: 'error', message: 'The mentor hit a snag. Try again.' });
+  } finally {
+    clearInterval(ping);
+    res.end();
+  }
 });

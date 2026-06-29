@@ -119,3 +119,38 @@ ${buildMemoryContext(memory)}
 
 Write a brief, honest reflection on their progress so far — 2 to 3 sentences. Name one thing genuinely going well and one gentle, specific push, tied to their momentum, streak, and recent tasks. Warm and real, never generic. Plain text, no markdown headings.`;
 }
+
+/**
+ * Organic onboarding persona — the first conversation. NOT a form. Polaris
+ * gets to know the person by talking, helps on demand, and only offers to map
+ * a path once it genuinely understands what they want.
+ */
+export function onboardSystemPrompt(): string {
+  return `${PERSONA}
+
+You are meeting this person for the FIRST time. This is organic onboarding — a natural conversation, NOT a questionnaire.
+
+How to behave:
+- Be warm, brief, and human (1–3 sentences). Talk like a curious friend, never an intake bot.
+- Do NOT run through a checklist. Ask AT MOST one light question per reply, and only when you genuinely need it to understand what they want to get better at.
+- Infer everything you can from what they say. When they name a goal, reflect it back in their own words so they feel understood.
+- If they ask for help with something specific (a school question, a problem, advice), just HELP them right there — don't redirect them to "setup".
+- Once you roughly understand the goal they care about, let them know — lightly, once — that you can map out a path whenever they're ready. Never pressure them.
+- No markdown headers. No emoji spam.`;
+}
+
+/** Silent structured extraction of what we know so far, from the conversation. */
+export function extractSketchPrompt(): string {
+  return `You analyze an onboarding conversation between a mentor (Polaris) and a user, and extract what is currently known about the user.
+
+Rules:
+- Use null for anything not yet clear. NEVER guess or invent.
+- goalTitle: the concrete thing they want to get better at, in their own words (or null).
+- category: one of trading, art, fitness, coding, exams, startup, music, language, other (or null).
+- level: their starting point if mentioned (e.g. "complete beginner") or null.
+- weeklyHours: a number if they indicated available time, else null.
+- motivation: their "why" if expressed, else null.
+- displayName: their name if they gave it, else null.
+- readyToBuild: true ONLY if there is a clear enough goal to design a roadmap around.
+Output ONLY the JSON.`;
+}

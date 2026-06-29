@@ -60,6 +60,8 @@ interface MentorState {
       summary: string | null;
       category: GoalCategory;
       context: GoalContext;
+      /** The organic onboarding conversation, persisted so the mentor remembers it. */
+      transcript?: { role: 'user' | 'assistant'; content: string }[];
     },
   ) => Promise<void>;
 
@@ -159,8 +161,21 @@ export const useMentor = create<MentorState>((set, get) => ({
       });
       const roadmap = await db.saveRoadmap(userId, goal.id, draft);
 
+      // Persist the onboarding conversation so the mentor remembers how it began.
+      let persisted: ChatMessage[] = [];
+      if (input.transcript && input.transcript.length > 0) {
+        persisted = await db.addMessages(
+          input.transcript.map((t) => ({
+            userId,
+            goalId: goal.id,
+            role: t.role,
+            content: t.content,
+          })),
+        );
+      }
+
       // Seed the thread with the mentor's framing + the roadmap artifact.
-      const intro = `Welcome${input.displayName ? `, ${input.displayName}` : ''}. ${roadmap.overview}\n\nI've mapped out your journey below. We'll move one milestone at a time — and I'll be here every day. Ready when you are.`;
+      const intro = `Here's the path I mapped for you${input.displayName ? `, ${input.displayName}` : ''}. ${roadmap.overview}\n\nWe'll move one milestone at a time — and I'll be here every day. Ready when you are.`;
       const seeded = await db.addMessage({
         userId,
         goalId: goal.id,
@@ -176,7 +191,7 @@ export const useMentor = create<MentorState>((set, get) => ({
         profile,
         goal: { ...goal, momentum },
         roadmap,
-        messages: [seeded],
+        messages: [...persisted, seeded],
         momentum,
         streak: emptyStreak,
       });

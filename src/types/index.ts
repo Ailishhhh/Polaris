@@ -143,3 +143,14 @@ export interface MentorMemory {
   streak: Streak;
   lastCheckIn: { date: ISODate; note: string | null; mood: number | null } | null;
 }
+
+/** What organic onboarding silently infers from the conversation. */
+export interface OnboardingSketch {
+  displayName: string | null;
+  goalTitle: string | null;
+  category: GoalCategory | null;
+  level: string | null;
+  weeklyHours: number | null;
+  motivation: string | null;
+  readyToBuild: boolean;
+}

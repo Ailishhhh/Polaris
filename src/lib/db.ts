@@ -303,6 +303,23 @@ export async function addMessage(input: {
   return mapMessage(data);
 }
 
+/** Batch insert (used to persist the onboarding conversation into memory). */
+export async function addMessages(
+  rows: { userId: string; goalId: string; role: ChatMessage['role']; content: string }[],
+): Promise<ChatMessage[]> {
+  if (rows.length === 0) return [];
+  const { data } = await supabase
+    .from('messages')
+    .insert(
+      rows.map((r) => ({ user_id: r.userId, goal_id: r.goalId, role: r.role, content: r.content })),
+    )
+    .select('*')
+    .throwOnError();
+  return ((data ?? []) as unknown[])
+    .map(mapMessage)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
 // ---- check-ins ----
 export async function addCheckIn(input: {
   userId: string;

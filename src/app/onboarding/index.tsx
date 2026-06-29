@@ -1,310 +1,261 @@
-import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { Button, MentorAvatar, Screen, Text } from '@/components/ui';
-import { Composer, ThinkingIndicator } from '@/components/chat';
+import { AmbientBackground, Button, MentorAvatar, Text } from '@/components/ui';
+import { Composer, MarkdownMessage, ThinkingIndicator } from '@/components/chat';
 import { useAuth, useMentor } from '@/store';
+import { streamOnboarding } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
-import type { GoalCategory } from '@/types';
-
-type StepId = 'name' | 'goal' | 'category' | 'level' | 'time' | 'why' | 'build';
+import type { GoalCategory, OnboardingSketch } from '@/types';
 
 interface Turn {
-  role: 'mentor' | 'user';
-  text: string;
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
 }
 
-const CATEGORIES: { label: string; value: GoalCategory }[] = [
-  { label: 'Trading', value: 'trading' },
-  { label: 'Art', value: 'art' },
-  { label: 'Fitness', value: 'fitness' },
-  { label: 'Coding', value: 'coding' },
-  { label: 'Exams', value: 'exams' },
-  { label: 'Startup', value: 'startup' },
-  { label: 'Music', value: 'music' },
-  { label: 'Language', value: 'language' },
-  { label: 'Something else', value: 'other' },
+const VALID_CATEGORIES: GoalCategory[] = [
+  'trading', 'art', 'fitness', 'coding', 'exams', 'startup', 'music', 'language', 'other',
 ];
 
-const LEVELS = ['Total beginner', 'I know some basics', 'Intermediate', 'Pretty advanced'];
-const TIME = [
-  { label: '1–2 hrs / week', hours: 2 },
-  { label: '3–5 hrs / week', hours: 4 },
-  { label: '6–10 hrs / week', hours: 8 },
-  { label: '10+ hrs / week', hours: 12 },
-];
+const OPENER =
+  "Hey — I'm Polaris. Think of me as a mentor in your corner.\n\nWhat's something you want to get better at? Or if there's something on your mind right now, just say it.";
 
 /**
- * Conversational onboarding. The mentor asks a few warm questions, captures the
- * goal + context, then generates the roadmap and drops the user into the app.
+ * Organic onboarding. No forms — a real conversation. Polaris chats, helps on
+ * demand, and quietly infers the user's goal/level/time/why. A "Build my plan"
+ * affordance appears only once it understands a goal; nothing is forced.
  */
 export default function Onboarding() {
   const theme = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const user = useAuth((s) => s.user);
   const completeOnboarding = useMentor((s) => s.completeOnboarding);
 
-  const [step, setStep] = useState<StepId>('name');
-  const [turns, setTurns] = useState<Turn[]>([]);
-  const [typing, setTyping] = useState(true);
+  const [turns, setTurns] = useState<Turn[]>([
+    { id: 'opener', role: 'assistant', content: OPENER },
+  ]);
+  const [streamingId, setStreamingId] = useState<string | null>(null);
+  const [thinking, setThinking] = useState(false);
+  const [sketch, setSketch] = useState<OnboardingSketch | null>(null);
+  const [building, setBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
-  const answers = useRef<{
-    displayName: string | null;
-    title: string;
-    category: GoalCategory;
-    level: string;
-    weeklyHours: number;
-    motivation: string | null;
-  }>({
-    displayName: null,
-    title: '',
-    category: 'other',
-    level: '',
-    weeklyHours: 4,
-    motivation: null,
-  });
-
-  const prompts: Record<StepId, string> = {
-    name: "Hey — I'm Polaris, your mentor. Before we start, what should I call you?",
-    goal: 'Love it. So tell me — what do you want to get good at? Be as specific as you like.',
-    category: 'Got it. Which of these fits best?',
-    level: 'And honestly — where are you starting from today?',
-    time: 'How much time can you realistically give this each week?',
-    why: "Last thing: why does this matter to you right now? (This keeps you going on hard days — but you can skip.)",
-    build: '',
-  };
-
-  // Push the mentor's prompt for a step with a brief "typing" beat.
-  const askStep = (id: StepId) => {
-    setTyping(true);
-    setTimeout(() => {
-      setTurns((t) => [...t, { role: 'mentor', text: prompts[id] }]);
-      setTyping(false);
-    }, 650);
-  };
-
-  useEffect(() => {
-    askStep('name');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
+  const scrollEnd = () =>
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
-  }, [turns, typing]);
 
-  const advance = (next: StepId, userText: string) => {
-    setTurns((t) => [...t, { role: 'user', text: userText }]);
-    setStep(next);
-    if (next !== 'build') askStep(next);
-  };
+  const send = async (text: string) => {
+    const history = turns.map((t) => ({ role: t.role, content: t.content }));
+    const userTurn: Turn = { id: `u-${Date.now()}`, role: 'user', content: text };
+    const replyId = `a-${Date.now()}`;
+    setTurns((t) => [...t, userTurn, { id: replyId, role: 'assistant', content: '' }]);
+    setStreamingId(replyId);
+    setThinking(true);
+    setError(null);
+    scrollEnd();
 
-  const onText = (text: string) => {
-    if (step === 'name') {
-      answers.current.displayName = text;
-      advance('goal', text);
-    } else if (step === 'goal') {
-      answers.current.title = text;
-      advance('category', text);
-    } else if (step === 'why') {
-      answers.current.motivation = text;
-      void build(text);
+    try {
+      await streamOnboarding(
+        { history, message: text },
+        {
+          onToken: (chunk) => {
+            setThinking(false);
+            setTurns((t) =>
+              t.map((x) => (x.id === replyId ? { ...x, content: x.content + chunk } : x)),
+            );
+            scrollEnd();
+          },
+          onProfile: (s) => setSketch(s),
+        },
+      );
+    } catch {
+      setError('I lost the connection for a second. Try sending that again.');
+    } finally {
+      setStreamingId(null);
+      setThinking(false);
     }
   };
 
-  const build = async (whyText: string | null) => {
-    setTurns((t) => [...t, ...(whyText ? [{ role: 'user' as const, text: whyText }] : [])]);
-    setStep('build');
-    setTyping(true);
+  const canBuild = !!sketch?.goalTitle && !building;
+
+  const build = async () => {
+    if (!user || !sketch?.goalTitle) return;
+    setBuilding(true);
     setError(null);
-    if (!user) return;
+    haptics.medium();
+    const category: GoalCategory =
+      sketch.category && VALID_CATEGORIES.includes(sketch.category) ? sketch.category : 'other';
     try {
       await completeOnboarding(user.id, {
-        displayName: answers.current.displayName,
+        displayName: sketch.displayName,
         age: null,
-        title: answers.current.title,
-        summary: answers.current.title,
-        category: answers.current.category,
+        title: sketch.goalTitle,
+        summary: sketch.goalTitle,
+        category,
         context: {
-          level: answers.current.level || null,
-          weeklyHours: answers.current.weeklyHours,
-          motivation: answers.current.motivation,
+          level: sketch.level,
+          weeklyHours: sketch.weeklyHours,
+          motivation: sketch.motivation,
           constraints: null,
           targetDate: null,
         },
+        transcript: turns.map((t) => ({ role: t.role, content: t.content })),
       });
       haptics.success();
       router.replace('/(tabs)');
     } catch (e) {
-      setTyping(false);
-      const detail = e instanceof Error ? e.message : '';
-      setError(
-        detail
-          ? `Couldn't build your roadmap. ${detail}`
-          : 'Couldn\'t build your roadmap. Check your connection and try again.',
-      );
+      setBuilding(false);
+      setError(e instanceof Error ? e.message : 'Could not build your plan. Try again.');
     }
   };
 
+  if (building) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <AmbientBackground />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.xxl }}>
+          <MentorAvatar size={64} thinking />
+          <Text variant="title" center style={{ marginTop: theme.spacing.xl }}>
+            Mapping your path…
+          </Text>
+          <Text variant="callout" color="textSecondary" center style={{ marginTop: theme.spacing.sm }}>
+            Turning everything you told me into phases, milestones, and a first day.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <Screen edges={['top', 'bottom']} padded={false}>
-      <View style={{ paddingHorizontal: theme.spacing.xl, paddingBottom: theme.spacing.md }}>
-        <Text variant="overline" color="textMuted">
-          GETTING STARTED
-        </Text>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background, paddingTop: insets.top }}>
+      <AmbientBackground />
+      <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
+
+      {/* Header */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: theme.spacing.xl,
+          paddingVertical: theme.spacing.md,
+        }}
+      >
+        <MentorAvatar size={34} thinking={thinking} />
+        <View style={{ marginLeft: theme.spacing.md }}>
+          <Text variant="subheading">Polaris</Text>
+          <Text variant="caption" color="textMuted">
+            {thinking ? 'thinking…' : streamingId ? 'typing…' : 'getting to know you'}
+          </Text>
+        </View>
       </View>
 
-      <ScrollView
-        ref={scrollRef}
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: theme.spacing.xl, paddingBottom: theme.spacing.xl }}
-        showsVerticalScrollIndicator={false}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={insets.top + 56}
       >
-        {turns.map((t, i) =>
-          t.role === 'mentor' ? (
-            <Animated.View
-              key={i}
-              entering={FadeInDown.duration(260)}
-              style={{ flexDirection: 'row', marginVertical: theme.spacing.sm }}
-            >
-              <MentorAvatar size={30} />
-              <View style={{ flex: 1, marginLeft: theme.spacing.md, paddingTop: 2 }}>
-                <Text variant="body">{t.text}</Text>
-              </View>
-            </Animated.View>
-          ) : (
-            <Animated.View
-              key={i}
-              entering={FadeInDown.duration(220)}
-              style={{ alignItems: 'flex-end', marginVertical: theme.spacing.xs }}
-            >
-              <View
-                style={{
-                  backgroundColor: theme.colors.bubbleUser,
-                  borderRadius: theme.radii.xl,
-                  borderTopRightRadius: theme.radii.sm,
-                  paddingHorizontal: theme.spacing.lg,
-                  paddingVertical: theme.spacing.md,
-                  maxWidth: '85%',
-                }}
+        <ScrollView
+          ref={scrollRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.sm,
+            paddingBottom: theme.spacing.xl,
+          }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={scrollEnd}
+        >
+          {turns.map((t) =>
+            t.role === 'assistant' ? (
+              <Animated.View
+                key={t.id}
+                entering={FadeInDown.duration(300)}
+                style={{ flexDirection: 'row', marginVertical: theme.spacing.sm }}
               >
-                <Text tint={theme.colors.bubbleUserText}>{t.text}</Text>
-              </View>
-            </Animated.View>
-          ),
-        )}
-        {typing ? <ThinkingIndicator /> : null}
-
-        {step === 'build' && !error ? (
-          <View style={{ alignItems: 'center', marginTop: theme.spacing.xxl }}>
-            <Text variant="heading" center>
-              Building your roadmap…
-            </Text>
-            <Text variant="callout" color="textSecondary" center style={{ marginTop: theme.spacing.sm }}>
-              Turning your goal into phases, milestones, and a first day.
-            </Text>
-          </View>
-        ) : null}
-
-        {error ? (
-          <View style={{ marginTop: theme.spacing.lg, gap: theme.spacing.md }}>
-            <Text variant="callout" tint={theme.colors.danger}>
+                <MentorAvatar size={30} />
+                <View style={{ flex: 1, marginLeft: theme.spacing.md }}>
+                  {t.content.length > 0 ? (
+                    <MarkdownMessage content={t.content} />
+                  ) : (
+                    <View style={{ height: 4 }} />
+                  )}
+                  {streamingId === t.id && t.content.length > 0 ? (
+                    <Text tint={theme.colors.accent} style={{ marginTop: -6 }}>
+                      ▍
+                    </Text>
+                  ) : null}
+                </View>
+              </Animated.View>
+            ) : (
+              <Animated.View
+                key={t.id}
+                entering={FadeInDown.duration(240)}
+                style={{ alignItems: 'flex-end', marginVertical: theme.spacing.xs }}
+              >
+                <View
+                  style={{
+                    maxWidth: '85%',
+                    backgroundColor: theme.colors.bubbleUser,
+                    borderRadius: theme.radii.xl,
+                    borderTopRightRadius: theme.radii.sm,
+                    paddingHorizontal: theme.spacing.lg,
+                    paddingVertical: theme.spacing.md,
+                  }}
+                >
+                  <Text tint={theme.colors.bubbleUserText}>{t.content}</Text>
+                </View>
+              </Animated.View>
+            ),
+          )}
+          {thinking ? <ThinkingIndicator /> : null}
+          {error ? (
+            <Text variant="caption" tint={theme.colors.danger} style={{ marginTop: theme.spacing.sm }}>
               {error}
             </Text>
-            <Button label="Try again" onPress={() => build(null)} />
-          </View>
+          ) : null}
+        </ScrollView>
+
+        {/* Build affordance — appears only once Polaris understands a goal. */}
+        {canBuild ? (
+          <Animated.View
+            entering={FadeIn.duration(300)}
+            style={{ paddingHorizontal: theme.spacing.xl, paddingBottom: theme.spacing.sm }}
+          >
+            <Button
+              label="Build my plan"
+              fullWidth
+              icon={<Ionicons name="sparkles" size={16} color={theme.colors.onAccent} />}
+              onPress={build}
+            />
+            <Text variant="caption" color="textMuted" center style={{ marginTop: 6 }}>
+              or keep chatting — I&apos;ll map it whenever you&apos;re ready
+            </Text>
+          </Animated.View>
         ) : null}
-      </ScrollView>
 
-      {/* Input zone adapts to the current step. */}
-      {!typing && step !== 'build' ? (
-        <View style={{ paddingHorizontal: theme.spacing.xl, paddingBottom: theme.spacing.md }}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            {step === 'category' ? (
-              <ChipGroup
-                options={CATEGORIES.map((c) => c.label)}
-                onSelect={(label) => {
-                  const found = CATEGORIES.find((c) => c.label === label)!;
-                  answers.current.category = found.value;
-                  advance('level', label);
-                }}
-              />
-            ) : step === 'level' ? (
-              <ChipGroup
-                options={LEVELS}
-                onSelect={(label) => {
-                  answers.current.level = label;
-                  advance('time', label);
-                }}
-              />
-            ) : step === 'time' ? (
-              <ChipGroup
-                options={TIME.map((t) => t.label)}
-                onSelect={(label) => {
-                  const found = TIME.find((t) => t.label === label)!;
-                  answers.current.weeklyHours = found.hours;
-                  advance('why', label);
-                }}
-              />
-            ) : step === 'why' ? (
-              <View>
-                <Composer
-                  onSend={onText}
-                  placeholder="Why this matters…"
-                  autoFocus
-                />
-                <Pressable onPress={() => build(null)} style={{ alignSelf: 'center', paddingTop: theme.spacing.md }}>
-                  <Text variant="caption" color="textMuted">
-                    Skip for now
-                  </Text>
-                </Pressable>
-              </View>
-            ) : (
-              <Composer
-                onSend={onText}
-                placeholder={step === 'name' ? 'Your name…' : 'Type your answer…'}
-                autoFocus
-              />
-            )}
-          </KeyboardAvoidingView>
-        </View>
-      ) : null}
-    </Screen>
-  );
-}
-
-function ChipGroup({
-  options,
-  onSelect,
-}: {
-  options: string[];
-  onSelect: (value: string) => void;
-}) {
-  const theme = useTheme();
-  return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-      {options.map((opt) => (
-        <Pressable
-          key={opt}
-          onPress={() => {
-            haptics.selection();
-            onSelect(opt);
-          }}
+        <View
           style={{
-            backgroundColor: theme.colors.surface,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            borderRadius: theme.radii.pill,
             paddingHorizontal: theme.spacing.lg,
-            paddingVertical: theme.spacing.md,
+            paddingTop: theme.spacing.sm,
+            paddingBottom: Platform.OS === 'ios' ? theme.spacing.sm : theme.spacing.md,
           }}
         >
-          <Text variant="bodyMedium">{opt}</Text>
-        </Pressable>
-      ))}
+          <Composer
+            onSend={send}
+            isStreaming={!!streamingId}
+            placeholder="Talk to Polaris…"
+            autoFocus
+          />
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }

@@ -117,3 +117,18 @@ export const tasksSchema = {
   },
   required: ['tasks'],
 };
+
+/** What we silently infer about the user during organic onboarding. */
+export const sketchSchema = {
+  type: Type.OBJECT,
+  properties: {
+    displayName: { type: Type.STRING, nullable: true },
+    goalTitle: { type: Type.STRING, nullable: true },
+    category: { type: Type.STRING, nullable: true },
+    level: { type: Type.STRING, nullable: true },
+    weeklyHours: { type: Type.NUMBER, nullable: true },
+    motivation: { type: Type.STRING, nullable: true },
+    readyToBuild: { type: Type.BOOLEAN },
+  },
+  required: ['readyToBuild'],
+};
