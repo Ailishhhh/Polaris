@@ -27,6 +27,14 @@ export const env = {
   fallbackBaseUrl: (process.env.FALLBACK_BASE_URL ?? '').replace(/\/$/, ''),
   fallbackApiKey: process.env.FALLBACK_API_KEY ?? '',
   fallbackModel: process.env.FALLBACK_MODEL ?? 'llama-3.3-70b-versatile',
+
+  /**
+   * Which provider to try FIRST: 'gemini' (default) or 'fallback'. Gemini's
+   * free tier is very limited (~20 req/day on 2.5-flash), so for a real free
+   * deployment set LLM_PRIMARY=fallback and point the fallback at Groq
+   * (~14,400 req/day, free) — Gemini then becomes the backup.
+   */
+  llmPrimary: (process.env.LLM_PRIMARY ?? 'gemini').toLowerCase(),
 };
 
 export const hasFallback = Boolean(env.fallbackBaseUrl && env.fallbackApiKey);

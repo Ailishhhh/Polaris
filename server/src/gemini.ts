@@ -140,12 +140,13 @@ async function fallbackJson<T>(systemInstruction: string, userPrompt: string): P
   return JSON.parse(data.choices?.[0]?.message?.content ?? '{}') as T;
 }
 
-// ---- Public API: Gemini primary, fallback on failure (if configured) ----
+// ---- Public API: ordered providers with automatic failover ----
 
 /**
- * Streams a model response token-by-token. Tries Gemini first; if it fails
- * BEFORE emitting anything and a fallback is configured, retries on the
- * fallback provider so a single outage/rate-limit never breaks the experience.
+ * Streams a model response. Tries providers in the configured order
+ * (LLM_PRIMARY), failing over to the next only if the current one errors
+ * BEFORE emitting anything — so a quota/outage on one provider never breaks
+ * the experience and we never duplicate text.
  */
 export async function streamText(
   systemInstruction: string,
@@ -157,33 +158,47 @@ export async function streamText(
     emitted += t.length;
     onToken(t);
   };
-  try {
-    return await geminiStream(systemInstruction, contents, counting);
-  } catch (err) {
-    if (hasFallback && emitted === 0) {
-      console.warn('[llm] Gemini stream failed, using fallback:', (err as Error)?.message);
-      return await fallbackStream(systemInstruction, contents, onToken);
+
+  const fallbackFirst = env.llmPrimary === 'fallback' && hasFallback;
+  const order: Array<(s: string, c: Content[], cb: (t: string) => void) => Promise<string>> =
+    fallbackFirst ? [fallbackStream, geminiStream] : hasFallback ? [geminiStream, fallbackStream] : [geminiStream];
+
+  let lastErr: unknown;
+  for (const provider of order) {
+    if (emitted > 0) break;
+    try {
+      return await provider(systemInstruction, contents, counting);
+    } catch (err) {
+      lastErr = err;
+      console.warn('[llm] stream provider failed, trying next:', (err as Error)?.message);
     }
-    throw err;
   }
+  throw lastErr ?? new Error('No LLM provider available');
 }
 
-/** One-shot structured JSON. Gemini (with schema) primary, fallback on failure. */
+/** One-shot structured JSON with the same ordered failover. */
 export async function generateJson<T>(
   systemInstruction: string,
   userPrompt: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   responseSchema: any,
 ): Promise<T> {
-  try {
-    return await geminiJson<T>(systemInstruction, userPrompt, responseSchema);
-  } catch (err) {
-    if (hasFallback) {
-      console.warn('[llm] Gemini JSON failed, using fallback:', (err as Error)?.message);
-      return await fallbackJson<T>(systemInstruction, userPrompt);
+  const tryGemini = () => geminiJson<T>(systemInstruction, userPrompt, responseSchema);
+  const tryFallback = () => fallbackJson<T>(systemInstruction, userPrompt);
+
+  const fallbackFirst = env.llmPrimary === 'fallback' && hasFallback;
+  const order = fallbackFirst ? [tryFallback, tryGemini] : hasFallback ? [tryGemini, tryFallback] : [tryGemini];
+
+  let lastErr: unknown;
+  for (const fn of order) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      console.warn('[llm] JSON provider failed, trying next:', (err as Error)?.message);
     }
-    throw err;
   }
+  throw lastErr ?? new Error('No LLM provider available');
 }
 
 // ---- Response schemas ----
