@@ -117,6 +117,38 @@ const darkPalette: Palette = {
 export const palettes = { light: lightPalette, dark: darkPalette } as const;
 export type ColorSchemeName = keyof typeof palettes;
 
+/**
+ * Atmospheric gradients. Per Anthropic's design guidance we avoid flat fills —
+ * surfaces sit on a warm, barely-there gradient with a soft accent "aura" that
+ * gives the app depth and a hand-crafted feel.
+ */
+export interface Gradients {
+  /** Full-screen backdrop (top -> bottom), three warm stops. */
+  ambient: readonly [string, string, string];
+  /** Soft accent glow placed behind hero content (already alpha-baked). */
+  aura: string;
+  /** The clay accent gradient (buttons, the momentum arc, the avatar). */
+  accent: readonly [string, string];
+  /** A faint sheen used on premium cards. */
+  sheen: readonly [string, string];
+}
+
+const lightGradients: Gradients = {
+  ambient: ['#FCFAF4', '#F7F0E4', '#F0E6D5'],
+  aura: 'rgba(187, 90, 55, 0.10)',
+  accent: ['#C2643B', '#A8492A'],
+  sheen: ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0)'],
+};
+
+const darkGradients: Gradients = {
+  ambient: ['#0E0B07', '#15110B', '#1C140D'],
+  aura: 'rgba(210, 122, 78, 0.18)',
+  accent: ['#E08C61', '#C9683F'],
+  sheen: ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)'],
+};
+
+export const gradients = { light: lightGradients, dark: darkGradients } as const;
+
 /** 4pt spacing scale. */
 export const spacing = {
   none: 0,
@@ -196,6 +228,7 @@ export function elevation(scheme: ColorSchemeName, level: 1 | 2 | 3) {
 export type Theme = {
   scheme: ColorSchemeName;
   colors: Palette;
+  gradients: Gradients;
   spacing: typeof spacing;
   radii: typeof radii;
   typography: typeof typography;
@@ -207,6 +240,7 @@ export function buildTheme(scheme: ColorSchemeName): Theme {
   return {
     scheme,
     colors: palettes[scheme],
+    gradients: gradients[scheme],
     spacing,
     radii,
     typography,

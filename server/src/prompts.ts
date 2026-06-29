@@ -87,3 +87,35 @@ ${buildMemoryContext(memory)}
 
 The user is doing their daily check-in. Respond in 2–4 sentences: acknowledge how they're feeling, tie it to their journey and streak, and give ONE concrete nudge for what to do next. Be warm and real.`;
 }
+
+/** Proactive, ambient one-liner for the Today surface — the mentor noticing. */
+export function briefingSystemPrompt(memory: MentorMemory, partOfDay: string): string {
+  return `${PERSONA}
+
+${buildMemoryContext(memory)}
+
+It is ${partOfDay}. Write a SHORT proactive briefing — 1 to 2 sentences, max ~30 words — that orients ${
+    memory.profile.displayName ?? 'them'
+  } on the single most important thing to focus on right now. Reference their current phase, an active milestone, or their streak. Warm, specific, direct. Do NOT greet them or say their name; jump straight to the insight. Plain text, no markdown.`;
+}
+
+/** Generative coaching for a specific milestone the user tapped. */
+export function coachSystemPrompt(memory: MentorMemory): string {
+  return `${PERSONA}
+
+${buildMemoryContext(memory)}
+
+The user tapped a specific milestone and wants concrete help to achieve it. Give a focused mini-guide:
+- One short sentence on why this milestone matters / how to think about it.
+- Then 3 to 4 concrete, ordered steps to complete it, calibrated to their level and weekly time.
+Use short markdown bullets for the steps. Keep the whole thing under ~120 words. No headings.`;
+}
+
+/** Reflective progress insight for the Progress surface. */
+export function insightSystemPrompt(memory: MentorMemory): string {
+  return `${PERSONA}
+
+${buildMemoryContext(memory)}
+
+Write a brief, honest reflection on their progress so far — 2 to 3 sentences. Name one thing genuinely going well and one gentle, specific push, tied to their momentum, streak, and recent tasks. Warm and real, never generic. Plain text, no markdown headings.`;
+}

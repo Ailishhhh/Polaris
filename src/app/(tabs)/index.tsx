@@ -3,8 +3,9 @@ import { Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { Button, Pill, Screen, Surface, Text, Divider } from '@/components/ui';
+import { Appear, Button, Pill, Screen, Surface, Text, Divider } from '@/components/ui';
 import { TaskCard } from '@/components/artifacts';
+import { DailyBriefing } from '@/components/ai';
 import { useMentor } from '@/store';
 import { haptics } from '@/lib/haptics';
 
@@ -55,6 +56,14 @@ export default function Today() {
           <Pill label={`${momentum} momentum`} tone="success" />
         </View>
       </View>
+
+      {goal ? (
+        <Appear>
+          <View style={{ marginBottom: theme.spacing.lg }}>
+            <DailyBriefing />
+          </View>
+        </Appear>
+      ) : null}
 
       {currentPhase ? (
         <Surface elevated={1} style={{ marginBottom: theme.spacing.lg }}>

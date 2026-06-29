@@ -3,10 +3,12 @@ import { View, ScrollView, type ViewStyle, type ScrollViewProps } from 'react-na
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '@/theme';
+import { AmbientBackground } from './AmbientBackground';
 
 /**
- * Standard screen frame: themed background, safe-area handling, and an optional
- * scroll container. Keeps every screen visually consistent.
+ * Standard screen frame: atmospheric backdrop, safe-area handling, and an
+ * optional scroll container. Keeps every screen visually consistent and gives
+ * the whole app a warm, hand-crafted depth.
  */
 export function Screen({
   children,
@@ -14,7 +16,8 @@ export function Screen({
   padded = true,
   edges = ['top'],
   contentStyle,
-  background,
+  ambient = true,
+  aura = true,
   scrollProps,
 }: {
   children: React.ReactNode;
@@ -22,29 +25,32 @@ export function Screen({
   padded?: boolean;
   edges?: Edge[];
   contentStyle?: ViewStyle;
-  background?: 'base' | 'alt';
+  ambient?: boolean;
+  aura?: boolean;
   scrollProps?: ScrollViewProps;
 }) {
   const theme = useTheme();
-  const bg = background === 'alt' ? theme.colors.backgroundAlt : theme.colors.background;
   const pad: ViewStyle = padded ? { paddingHorizontal: theme.spacing.xl } : {};
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: bg }} edges={edges}>
-      <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
-      {scroll ? (
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={[pad, { paddingBottom: theme.spacing.huge }, contentStyle]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          {...scrollProps}
-        >
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={[{ flex: 1 }, pad, contentStyle]}>{children}</View>
-      )}
-    </SafeAreaView>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      {ambient ? <AmbientBackground aura={aura} /> : null}
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={edges}>
+        <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
+        {scroll ? (
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={[pad, { paddingBottom: theme.spacing.huge }, contentStyle]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            {...scrollProps}
+          >
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={[{ flex: 1 }, pad, contentStyle]}>{children}</View>
+        )}
+      </SafeAreaView>
+    </View>
   );
 }

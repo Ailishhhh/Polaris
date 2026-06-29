@@ -6,6 +6,7 @@ import type {
   Goal,
   GoalCategory,
   GoalContext,
+  MentorMemory,
   Milestone,
   Profile,
   Roadmap,
@@ -73,6 +74,9 @@ interface MentorState {
   skipTask: (t: DailyTask) => Promise<void>;
   refreshTodayTasks: () => Promise<void>;
   submitCheckIn: (mood: number | null, note: string) => Promise<string>;
+
+  /** Build the live memory packet for proactive AI surfaces (briefing/coach/insight). */
+  currentMemory: () => MentorMemory | null;
 }
 
 let abortController: AbortController | null = null;
@@ -373,6 +377,20 @@ export const useMentor = create<MentorState>((set, get) => ({
     const nextStreak = computeStreak(activeDatesFrom(todayTasks, nextCheckIns));
     set({ checkIns: nextCheckIns, streak: nextStreak });
     return reply;
+  },
+
+  currentMemory: () => {
+    const { goal, profile, roadmap, todayTasks, checkIns, streak, momentum } = get();
+    if (!goal) return null;
+    return buildMentorMemory({
+      profile,
+      goal,
+      roadmap,
+      recentTasks: todayTasks,
+      checkIns,
+      streak,
+      momentum,
+    });
   },
 }));
 

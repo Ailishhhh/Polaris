@@ -9,10 +9,12 @@ import type { Milestone } from '@/types';
 export function MilestoneRow({
   milestone,
   onToggle,
+  onCoach,
   last,
 }: {
   milestone: Milestone;
   onToggle?: (m: Milestone) => void;
+  onCoach?: (m: Milestone) => void;
   last?: boolean;
 }) {
   const theme = useTheme();
@@ -63,6 +65,35 @@ export function MilestoneRow({
           </Text>
         ) : null}
       </View>
+
+      {/* Generative coaching trigger — the AI reaching into the plan. */}
+      {onCoach ? (
+        <Pressable
+          hitSlop={10}
+          onPress={(e) => {
+            // Don't also toggle the milestone.
+            e.stopPropagation?.();
+            haptics.selection();
+            onCoach(milestone);
+          }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            backgroundColor: theme.colors.accentSoft,
+            borderRadius: theme.radii.pill,
+            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: 5,
+            marginLeft: theme.spacing.sm,
+            marginTop: 2,
+          }}
+        >
+          <Ionicons name="sparkles" size={12} color={theme.colors.accentSoftText} />
+          <Text variant="caption" tint={theme.colors.accentSoftText}>
+            Coach
+          </Text>
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }

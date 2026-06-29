@@ -42,26 +42,28 @@ export interface ChatTurn {
 }
 
 /**
- * Streams a mentor reply. Sends the memory packet + recent history so the
- * mentor always responds with full context. Resolves with the complete text.
+ * Core SSE consumer. POSTs to a streaming endpoint and feeds tokens to the
+ * handlers as they arrive. Uses `expo/fetch` because the global fetch in React
+ * Native can't stream a response body. Resolves with the full accumulated text.
  */
-export async function streamMentorReply(
-  params: { memory: MentorMemory; history: ChatTurn[]; message: string },
+async function consumeStream(
+  path: string,
+  body: unknown,
   handlers: StreamHandlers,
 ): Promise<string> {
   const headers = await authHeaders();
   let full = '';
 
   try {
-    const res = await expoFetch(`${config.apiUrl}/api/chat`, {
+    const res = await expoFetch(`${config.apiUrl}${path}`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(params),
+      body: JSON.stringify(body),
       signal: handlers.signal,
     });
 
     if (!res.ok || !res.body) {
-      throw new ApiError(`Chat request failed (${res.status})`, res.status);
+      throw new ApiError(`Request to ${path} failed (${res.status})`, res.status);
     }
 
     const reader = res.body.getReader();
@@ -105,6 +107,35 @@ export async function streamMentorReply(
     handlers.onError?.(error);
     throw error;
   }
+}
+
+/**
+ * Streams a mentor reply. Sends the memory packet + recent history so the
+ * mentor always responds with full context. Resolves with the complete text.
+ */
+export async function streamMentorReply(
+  params: { memory: MentorMemory; history: ChatTurn[]; message: string },
+  handlers: StreamHandlers,
+): Promise<string> {
+  return consumeStream('/api/chat', params, handlers);
+}
+
+/** Proactive "what to focus on now" one-liner for the Today surface (streamed). */
+export function streamBriefing(memory: MentorMemory, handlers: StreamHandlers): Promise<string> {
+  return consumeStream('/api/briefing', { memory }, handlers);
+}
+
+/** Generative how-to coaching for a tapped milestone (streamed). */
+export function streamCoach(
+  params: { memory: MentorMemory; milestoneTitle: string; milestoneDescription?: string },
+  handlers: StreamHandlers,
+): Promise<string> {
+  return consumeStream('/api/coach', params, handlers);
+}
+
+/** Reflective progress insight for the Progress surface (streamed). */
+export function streamInsight(memory: MentorMemory, handlers: StreamHandlers): Promise<string> {
+  return consumeStream('/api/insight', { memory }, handlers);
 }
 
 export interface RoadmapDraftPhase {

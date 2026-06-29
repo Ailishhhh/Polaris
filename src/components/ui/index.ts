@@ -11,3 +11,5 @@ export { IconButton } from './IconButton';
 export { MentorAvatar } from './MentorAvatar';
 export { Screen } from './Screen';
 export { Skeleton } from './Skeleton';
+export { AmbientBackground } from './AmbientBackground';
+export { Appear } from './Appear';

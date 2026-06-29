@@ -8,6 +8,9 @@ import {
 } from '../gemini.js';
 import {
   checkinSystemPrompt,
+  briefingSystemPrompt,
+  coachSystemPrompt,
+  insightSystemPrompt,
   mentorSystemPrompt,
   roadmapSystemPrompt,
   tasksSystemPrompt,
@@ -19,6 +22,47 @@ export const api = Router();
 /** Trim history so prompts stay bounded; the memory packet carries long-term context. */
 function recentHistory(history: ChatTurn[], max = 16): ChatTurn[] {
   return Array.isArray(history) ? history.slice(-max) : [];
+}
+
+/**
+ * Streams a single-shot mentor message over SSE given a system instruction and
+ * one user prompt. Shared by the proactive AI surfaces (briefing/coach/insight).
+ */
+async function streamSSE(
+  res: Response,
+  systemInstruction: string,
+  userPrompt: string,
+  tag: string,
+) {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  const send = (obj: unknown) => res.write(`data: ${JSON.stringify(obj)}\n\n`);
+  const ping = setInterval(() => res.write(': ping\n\n'), 15000);
+
+  try {
+    await streamText(systemInstruction, toContents([{ role: 'user', content: userPrompt }]), (token) =>
+      send({ type: 'token', value: token }),
+    );
+    send({ type: 'done' });
+    res.write('data: [DONE]\n\n');
+  } catch (err) {
+    console.error(`[${tag}] error`, err);
+    send({ type: 'error', message: 'The mentor hit a snag. Try again.' });
+  } finally {
+    clearInterval(ping);
+    res.end();
+  }
+}
+
+function partOfDay(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'morning';
+  if (h < 18) return 'afternoon';
+  return 'evening';
 }
 
 /**
@@ -147,4 +191,60 @@ api.post('/checkin', async (req: Request, res: Response) => {
     console.error('[checkin] error', err);
     res.status(502).json({ error: 'Failed to process check-in' });
   }
+});
+
+
+/**
+ * POST /api/briefing — a proactive, ambient one-liner for the Today surface.
+ * Body: { memory }  (SSE stream)
+ */
+api.post('/briefing', async (req: Request, res: Response) => {
+  const { memory } = req.body as { memory: MentorMemory };
+  if (!memory) {
+    res.status(400).json({ error: 'memory is required' });
+    return;
+  }
+  await streamSSE(
+    res,
+    briefingSystemPrompt(memory, partOfDay()),
+    'Give me my briefing for right now.',
+    'briefing',
+  );
+});
+
+/**
+ * POST /api/coach — generative how-to coaching for a tapped milestone.
+ * Body: { memory, milestoneTitle, milestoneDescription }  (SSE stream)
+ */
+api.post('/coach', async (req: Request, res: Response) => {
+  const { memory, milestoneTitle, milestoneDescription } = req.body as {
+    memory: MentorMemory;
+    milestoneTitle: string;
+    milestoneDescription?: string;
+  };
+  if (!memory || !milestoneTitle) {
+    res.status(400).json({ error: 'memory and milestoneTitle are required' });
+    return;
+  }
+  await streamSSE(
+    res,
+    coachSystemPrompt(memory),
+    `Coach me on this milestone: "${milestoneTitle}"${
+      milestoneDescription ? ` — ${milestoneDescription}` : ''
+    }. How do I actually get this done?`,
+    'coach',
+  );
+});
+
+/**
+ * POST /api/insight — a reflective progress insight for the Progress surface.
+ * Body: { memory }  (SSE stream)
+ */
+api.post('/insight', async (req: Request, res: Response) => {
+  const { memory } = req.body as { memory: MentorMemory };
+  if (!memory) {
+    res.status(400).json({ error: 'memory is required' });
+    return;
+  }
+  await streamSSE(res, insightSystemPrompt(memory), 'Reflect on my progress so far.', 'insight');
 });

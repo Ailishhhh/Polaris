@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { Button, Divider, MomentumRing, ProgressBar, Screen, Surface, Text } from '@/components/ui';
+import { InsightCard } from '@/components/ai';
 import { useAuth, useMentor } from '@/store';
 
 function Stat({ value, label, icon }: { value: string; label: string; icon: keyof typeof Ionicons.glyphMap }) {
@@ -61,6 +62,12 @@ export default function ProgressScreen() {
         <Stat value={`${streak.longest}`} label="longest streak" icon="trophy-outline" />
         <Stat value={`${doneMilestones}/${milestones.length}`} label="milestones" icon="flag-outline" />
       </View>
+
+      {goal ? (
+        <View style={{ marginTop: theme.spacing.lg }}>
+          <InsightCard />
+        </View>
+      ) : null}
 
       {roadmap ? (
         <Surface elevated={1} style={{ marginTop: theme.spacing.lg }}>

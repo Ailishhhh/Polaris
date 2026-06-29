@@ -19,11 +19,13 @@ function PhaseBlock({
   index,
   defaultOpen,
   onToggleMilestone,
+  onCoachMilestone,
 }: {
   phase: Phase;
   index: number;
   defaultOpen?: boolean;
   onToggleMilestone?: (m: Milestone) => void;
+  onCoachMilestone?: (m: Milestone) => void;
 }) {
   const theme = useTheme();
   const [open, setOpen] = useState(defaultOpen ?? index === 0);
@@ -88,6 +90,7 @@ function PhaseBlock({
               key={m.id}
               milestone={m}
               onToggle={onToggleMilestone}
+              onCoach={onCoachMilestone}
               last={i === phase.milestones.length - 1}
             />
           ))}
@@ -106,11 +109,13 @@ export function RoadmapCard({
   roadmap,
   compact = false,
   onToggleMilestone,
+  onCoachMilestone,
   onOpenPlan,
 }: {
   roadmap: Roadmap;
   compact?: boolean;
   onToggleMilestone?: (m: Milestone) => void;
+  onCoachMilestone?: (m: Milestone) => void;
   onOpenPlan?: () => void;
 }) {
   const theme = useTheme();
@@ -157,6 +162,7 @@ export function RoadmapCard({
           index={i}
           defaultOpen={!compact && i === 0}
           onToggleMilestone={onToggleMilestone}
+          onCoachMilestone={onCoachMilestone}
         />
       ))}
 

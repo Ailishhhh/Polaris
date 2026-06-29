@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -47,12 +48,24 @@ export function MomentumRing({
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      {/* Soft halo behind the ring for an emotive glow. */}
+      <LinearGradient
+        colors={[theme.gradients.aura, 'transparent']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={{
+          position: 'absolute',
+          width: size * 1.15,
+          height: size * 1.15,
+          borderRadius: size,
+        }}
+      />
       <Svg width={size} height={size}>
         <Defs>
-          <LinearGradient id="momentumGrad" x1="0" y1="0" x2="1" y2="1">
+          <SvgGradient id="momentumGrad" x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={theme.colors.accent} />
             <Stop offset="1" stopColor={theme.colors.accentPressed} />
-          </LinearGradient>
+          </SvgGradient>
         </Defs>
         <Circle
           cx={size / 2}
