@@ -15,6 +15,7 @@ import type {
 } from '@/types';
 import * as db from '@/lib/db';
 import {
+  consolidateMemory,
   generateDailyTasks,
   generateRoadmap,
   sendCheckIn as apiSendCheckIn,
@@ -79,6 +80,11 @@ interface MentorState {
 
   /** Build the live memory packet for proactive AI surfaces (briefing/coach/insight). */
   currentMemory: () => MentorMemory | null;
+
+  /** Fold the recent conversation into long-term memory (summary + facts). */
+  consolidateMemoryNow: () => Promise<void>;
+  /** Re-map the roadmap using everything Polaris has learned. */
+  reviseRoadmap: () => Promise<void>;
 }
 
 let abortController: AbortController | null = null;
@@ -274,6 +280,10 @@ export const useMentor = create<MentorState>((set, get) => ({
         isThinking: false,
         messages: s.messages.map((m) => (m.id === placeholderId ? saved : m)),
       }));
+
+      // Quietly fold the conversation into long-term memory every few replies.
+      const assistantCount = get().messages.filter((m) => m.role === 'assistant').length;
+      if (assistantCount % 3 === 0) void get().consolidateMemoryNow();
     } catch (e) {
       set((s) => ({
         streamingId: null,
@@ -406,6 +416,63 @@ export const useMentor = create<MentorState>((set, get) => ({
       streak,
       momentum,
     });
+  },
+
+  consolidateMemoryNow: async () => {
+    const { goal, messages } = get();
+    if (!goal) return;
+    const recentTurns: ChatTurn[] = messages
+      .slice(-10)
+      .map((m) => ({ role: m.role, content: m.content }));
+    if (recentTurns.length === 0) return;
+    try {
+      const { summary, learned } = await consolidateMemory({
+        recentTurns,
+        currentSummary: goal.context?.memorySummary ?? null,
+        currentLearned: goal.context?.learned ?? null,
+      });
+      const base: GoalContext = goal.context ?? {
+        level: null,
+        weeklyHours: null,
+        motivation: null,
+        constraints: null,
+        targetDate: null,
+      };
+      const nextContext: GoalContext = { ...base, memorySummary: summary, learned };
+      await db.updateGoalContext(goal.id, nextContext);
+      set({ goal: { ...goal, context: nextContext } });
+    } catch (e) {
+      console.warn('Memory consolidation failed (non-fatal):', e);
+    }
+  },
+
+  reviseRoadmap: async () => {
+    const { goal, todayTasks } = get();
+    if (!goal) return;
+    set({ busy: true, error: null });
+    try {
+      const context: GoalContext = goal.context ?? {
+        level: null,
+        weeklyHours: null,
+        motivation: null,
+        constraints: null,
+        targetDate: null,
+      };
+      const draft = await generateRoadmap({
+        goalTitle: goal.title,
+        category: goal.category,
+        context,
+      });
+      const roadmap = await db.saveRoadmap(goal.userId, goal.id, draft);
+      const momentum = computeMomentum(roadmap, todayTasks);
+      await db.updateGoalMomentum(goal.id, momentum);
+      set({ roadmap, momentum, goal: { ...goal, momentum } });
+    } catch (e) {
+      set({ error: errMsg(e) });
+      throw e;
+    } finally {
+      set({ busy: false });
+    }
   },
 }));
 

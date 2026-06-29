@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { Appear, Pill, Screen, Surface, Text } from '@/components/ui';
+import { Appear, Button, Pill, Screen, Surface, Text } from '@/components/ui';
 import { RoadmapCard } from '@/components/artifacts';
 import { MilestoneCoachSheet } from '@/components/ai';
 import { useMentor } from '@/store';
@@ -21,8 +22,25 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 export default function PlanScreen() {
   const theme = useTheme();
-  const { goal, roadmap, toggleMilestone } = useMentor();
+  const { goal, roadmap, toggleMilestone, reviseRoadmap, busy } = useMentor();
   const [coachMilestone, setCoachMilestone] = useState<Milestone | null>(null);
+
+  const confirmRevise = () => {
+    Alert.alert(
+      'Revise your roadmap?',
+      "Polaris will re-map your plan using everything it's learned about you. This replaces your current phases and milestones.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Revise',
+          style: 'destructive',
+          onPress: () => {
+            reviseRoadmap().catch(() => {});
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <Screen scroll>
@@ -65,6 +83,22 @@ export default function PlanScreen() {
         </Text>{' '}
         for an AI plan to crush it.
       </Text>
+
+      {roadmap ? (
+        <View style={{ marginTop: theme.spacing.lg, alignItems: 'center' }}>
+          <Button
+            label={busy ? 'Re-mapping…' : 'Revise with Polaris'}
+            variant="secondary"
+            size="sm"
+            loading={busy}
+            icon={<Ionicons name="sparkles" size={15} color={theme.colors.text} />}
+            onPress={confirmRevise}
+          />
+          <Text variant="caption" color="textMuted" center style={{ marginTop: 6 }}>
+            Re-maps your plan from everything Polaris has learned about you
+          </Text>
+        </View>
+      ) : null}
 
       <MilestoneCoachSheet milestone={coachMilestone} onClose={() => setCoachMilestone(null)} />
     </Screen>

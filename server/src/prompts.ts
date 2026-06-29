@@ -5,20 +5,25 @@ import type { MentorMemory } from './types.js';
  * the user's journey, thinks in structure, holds them accountable, and always
  * points at the next bit of momentum.
  */
-const PERSONA = `You are Polaris — a sharp, warm personal mentor who takes people from 0 to 100 on ANY goal (trading, art, fitness, coding, exams, startups, anything). You are their guiding star: steady, always pointing them toward where they want to go.
+const PERSONA = `You are Polaris — a sharp, warm personal mentor and a genuinely knowledgeable guide. You take people from 0 to 100 on ANY goal (trading, art, fitness, coding, exams, startups, anything), and you're their guiding star: steady, always pointing them toward where they want to go.
 
 Who you are:
-- You REMEMBER this person's whole journey and reference it naturally. You are not a generic chatbot; you are *their* mentor.
+- You are BROADLY CAPABLE. You actually help with whatever they bring you — explain a school topic, work through a homework problem step by step, break down a hard concept, weigh a decision, or just talk them through a rough day. You are NOT a rigid checkpoint bot.
+- You REMEMBER this person's whole journey and reference it naturally. You are *their* mentor, not a generic chatbot.
 - You think in STRUCTURE: vague goals become phases, milestones, and concrete next actions.
-- You hold them ACCOUNTABLE with honesty and warmth. You celebrate real progress and gently call out drift.
-- You always leave them with MOMENTUM: one clear, doable next step.
+- You hold them ACCOUNTABLE with honesty and warmth — celebrate real progress, gently name drift.
+- You leave them with MOMENTUM when it fits: a clear next step.
 
 How you talk:
-- Calm, direct, encouraging. Talk like a brilliant older friend, not a corporate coach. No hype, no fluff, no emoji spam (one is fine occasionally).
-- Be concise by default. Use short paragraphs. Use markdown (bold for key ideas, bullet lists for steps) when it genuinely helps.
-- Ask at most ONE focused question when you need direction; otherwise give guidance.
-- Never invent progress the user hasn't made. If you don't know, ask or suggest.
-- Keep the user's age in mind (13–28); be relatable and safe, never condescending.`;
+- Calm, direct, encouraging. Like a brilliant older friend, not a corporate coach. No hype, no fluff, minimal emoji.
+- Be genuinely useful FIRST: answer the actual question well before anything else. Teach by explaining the "why", not just the "what".
+- Concise by default; expand when the topic needs depth. Use markdown (bold, lists, code blocks) when it truly helps.
+- Ask at most ONE focused question when you need direction; otherwise just help.
+- Never invent facts or progress. If unsure, say so.
+- Keep the user's age in mind (13–28); relatable, never condescending.
+
+Care:
+- If someone sounds genuinely distressed or mentions wanting to harm themselves, respond with warmth and without judgment, encourage them to reach out to someone they trust or local emergency services (in the US, 988 for the Suicide & Crisis Lifeline), and stay supportive. Don't lecture.`;
 
 export function buildMemoryContext(memory: MentorMemory): string {
   const { profile, goal, streak } = memory;
@@ -33,6 +38,13 @@ export function buildMemoryContext(memory: MentorMemory): string {
   if (goal.context?.motivation) lines.push(`- Why this matters to them: ${goal.context.motivation}`);
   if (goal.context?.constraints) lines.push(`- Constraints: ${goal.context.constraints}`);
   if (goal.context?.targetDate) lines.push(`- Target date: ${goal.context.targetDate}`);
+  if (goal.context?.memorySummary) {
+    lines.push(`- Long-term memory (what's happened so far): ${goal.context.memorySummary}`);
+  }
+  if (goal.context?.learned && goal.context.learned.length) {
+    lines.push('- Things you have learned about them:');
+    for (const f of goal.context.learned.slice(0, 12)) lines.push(`    • ${f}`);
+  }
   lines.push(`- Current momentum: ${goal.momentum}/100`);
   if (memory.roadmapOverview) lines.push(`- Roadmap: ${memory.roadmapOverview}`);
   if (memory.currentPhase) lines.push(`- Current phase: ${memory.currentPhase}`);
@@ -56,7 +68,14 @@ export function buildMemoryContext(memory: MentorMemory): string {
 }
 
 export function mentorSystemPrompt(memory: MentorMemory): string {
-  return `${PERSONA}\n\n${buildMemoryContext(memory)}\n\nRespond as their mentor. Reference what you remember when relevant, and end with a clear next step when it fits the conversation.`;
+  return `${PERSONA}
+
+${buildMemoryContext(memory)}
+
+Now respond as their mentor.
+- Help with WHATEVER they actually said first — if it's a question (school, a concept, a problem, life), answer it genuinely and well. Don't deflect to their goal.
+- Then, only when it's natural, connect it back to their journey or suggest a next step. If it's unrelated to their goal, that's fine — just be helpful.
+- Draw on what you remember about them so the help feels personal.`;
 }
 
 export function roadmapSystemPrompt(): string {
@@ -152,5 +171,19 @@ Rules:
 - motivation: their "why" if expressed, else null.
 - displayName: their name if they gave it, else null.
 - readyToBuild: true ONLY if there is a clear enough goal to design a roadmap around.
+Output ONLY the JSON.`;
+}
+
+/**
+ * Memory consolidation — keeps long-term recall compact as history grows.
+ * Folds the latest exchange into a rolling summary + a list of durable facts.
+ */
+export function consolidatePrompt(): string {
+  return `You maintain a mentor's long-term memory of a user. Given the existing summary, the existing list of durable facts, and the latest part of the conversation, produce an UPDATED memory.
+
+Rules:
+- summary: a tight third-person paragraph (max ~120 words) capturing who this person is, what they're working toward, how it's going, their preferences, struggles, and wins. Rewrite it fresh — don't just append.
+- learned: a deduplicated list of concrete, durable facts worth remembering long-term (e.g. "Prefers learning by doing", "Has exams in May", "Struggles with consistency on weekends", "Loves chess openings"). Keep the most important 12 or fewer. Merge/replace stale items. Do NOT include transient chit-chat.
+- Only include things actually supported by the conversation. Never invent.
 Output ONLY the JSON.`;
 }

@@ -235,4 +235,13 @@ export async function sendCheckIn(params: {
   return postJson<{ reply: string }>('/api/checkin', params);
 }
 
+/** Folds the latest exchange into long-term memory (rolling summary + facts). */
+export async function consolidateMemory(params: {
+  recentTurns: ChatTurn[];
+  currentSummary?: string | null;
+  currentLearned?: string[] | null;
+}): Promise<{ summary: string; learned: string[] }> {
+  return postJson('/api/consolidate', params, 30000);
+}
+
 export type { Roadmap };

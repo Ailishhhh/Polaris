@@ -15,6 +15,10 @@ export interface MentorMemory {
       motivation: string | null;
       constraints: string | null;
       targetDate: string | null;
+      /** Durable facts Polaris has learned about the user over time. */
+      learned?: string[] | null;
+      /** Rolling summary of the relationship so long history never gets lost. */
+      memorySummary?: string | null;
     } | null;
     momentum: number;
   };

@@ -55,6 +55,10 @@ export interface GoalContext {
   motivation: string | null; // the user's "why"
   constraints: string | null; // time, money, gear
   targetDate: ISODate | null;
+  /** Durable facts Polaris has learned over time (long-term memory). */
+  learned?: string[] | null;
+  /** Rolling summary of the relationship so growing history never gets lost. */
+  memorySummary?: string | null;
 }
 
 export interface Roadmap {

@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import {
   generateJson,
+  memorySchema,
   roadmapSchema,
   sketchSchema,
   streamText,
@@ -11,6 +12,7 @@ import {
   checkinSystemPrompt,
   briefingSystemPrompt,
   coachSystemPrompt,
+  consolidatePrompt,
   extractSketchPrompt,
   insightSystemPrompt,
   mentorSystemPrompt,
@@ -308,5 +310,40 @@ api.post('/onboard', async (req: Request, res: Response) => {
   } finally {
     clearInterval(ping);
     res.end();
+  }
+});
+
+
+/**
+ * POST /api/consolidate — fold the latest exchange into long-term memory.
+ * Body: { recentTurns: ChatTurn[], currentSummary?: string, currentLearned?: string[] }
+ * Returns: { summary, learned }
+ */
+api.post('/consolidate', async (req: Request, res: Response) => {
+  const { recentTurns, currentSummary, currentLearned } = req.body as {
+    recentTurns: ChatTurn[];
+    currentSummary?: string;
+    currentLearned?: string[];
+  };
+  if (!Array.isArray(recentTurns) || recentTurns.length === 0) {
+    res.status(400).json({ error: 'recentTurns is required' });
+    return;
+  }
+  try {
+    const convo = recentTurns
+      .map((t) => `${t.role === 'assistant' ? 'Polaris' : 'User'}: ${t.content}`)
+      .join('\n');
+    const prompt = `Existing summary:\n${currentSummary || '(none yet)'}\n\nExisting facts:\n${
+      (currentLearned ?? []).map((f) => `- ${f}`).join('\n') || '(none yet)'
+    }\n\nLatest conversation:\n${convo}\n\nProduce the updated memory.`;
+    const data = await generateJson<{ summary: string; learned: string[] }>(
+      consolidatePrompt(),
+      prompt,
+      memorySchema,
+    );
+    res.json(data);
+  } catch (err) {
+    console.error('[consolidate] error', err);
+    res.status(502).json({ error: 'Failed to consolidate memory' });
   }
 });

@@ -147,6 +147,11 @@ export async function updateGoalMomentum(goalId: string, momentum: number) {
   await supabase.from('goals').update({ momentum }).eq('id', goalId).throwOnError();
 }
 
+/** Persist the goal's context jsonb (level, learned facts, memory summary, etc.). */
+export async function updateGoalContext(goalId: string, context: GoalContext) {
+  await supabase.from('goals').update({ context }).eq('id', goalId).throwOnError();
+}
+
 // ---- roadmap ----
 export async function getRoadmap(goalId: string): Promise<Roadmap | null> {
   const { data } = await supabase
