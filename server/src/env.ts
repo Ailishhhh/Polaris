@@ -35,7 +35,16 @@ export const env = {
    * (~14,400 req/day, free) — Gemini then becomes the backup.
    */
   llmPrimary: (process.env.LLM_PRIMARY ?? 'gemini').toLowerCase(),
+
+  /**
+   * Supabase project — used to VERIFY caller tokens so the public API can't be
+   * abused (and our free Groq quota drained). Anon key is public by design.
+   */
+  supabaseUrl: (process.env.SUPABASE_URL ?? '').replace(/\/$/, ''),
+  supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? '',
 };
+
+export const authEnabled = Boolean(env.supabaseUrl && env.supabaseAnonKey);
 
 export const hasFallback = Boolean(env.fallbackBaseUrl && env.fallbackApiKey);
 
@@ -44,4 +53,9 @@ if (!env.geminiApiKey) {
 }
 if (hasFallback) {
   console.log(`[env] Fallback LLM enabled: ${env.fallbackModel} @ ${env.fallbackBaseUrl}`);
+}
+if (authEnabled) {
+  console.log('[env] API auth verification enabled (Supabase tokens).');
+} else {
+  console.warn('[env] API auth DISABLED — set SUPABASE_URL + SUPABASE_ANON_KEY to protect the API.');
 }

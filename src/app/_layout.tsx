@@ -43,6 +43,7 @@ function Navigator() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="account" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }

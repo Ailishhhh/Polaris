@@ -28,3 +28,8 @@ services:
         value: fallback
       - key: FALLBACK_API_KEY
         sync: false
+      # Supabase token verification (anon key is public by design — safe to commit)
+      - key: SUPABASE_URL
+        value: https://nqhpmolsnovmawldduay.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xaHBtb2xzbm92bWF3bGRkdWF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDg3NTIsImV4cCI6MjA5ODIyNDc1Mn0.b6BAvgXAAdnEYl3G9MnKhlluO0toPeUZ84Rj1pmhYGs
