@@ -1,5 +1,6 @@
 # Render blueprint for the Polaris mentor backend.
-# In Render: New > Blueprint > point at this repo. Set GEMINI_API_KEY when prompted.
+# In Render: New > Blueprint > pick this repo. It reads this file, builds the
+# server/ folder, and asks you for GEMINI_API_KEY. That's it.
 services:
   - type: web
     name: polaris-mentor-api
