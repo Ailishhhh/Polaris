@@ -1,11 +1,9 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 
 export default function TabsLayout() {
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -13,16 +11,15 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: theme.colors.accent,
         tabBarInactiveTintColor: theme.colors.textMuted,
+        // Let react-navigation apply the correct bottom safe-area inset itself
+        // (avoids colliding with the system nav bar on Android). We only style
+        // the surface; height + bottom padding are handled by the library.
         tabBarStyle: {
           backgroundColor: theme.colors.background,
           borderTopColor: theme.colors.border,
           borderTopWidth: 1,
-          height: 58 + insets.bottom,
-          paddingBottom: insets.bottom > 0 ? insets.bottom - 4 : 8,
-          paddingTop: 8,
         },
         tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 11, letterSpacing: 0.2 },
-        tabBarItemStyle: { paddingTop: 2 },
       }}
     >
       <Tabs.Screen

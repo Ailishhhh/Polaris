@@ -93,6 +93,7 @@ export default function PlanScreen() {
             loading={busy}
             icon={<Ionicons name="sparkles" size={15} color={theme.colors.text} />}
             onPress={confirmRevise}
+            style={{ alignSelf: 'center' }}
           />
           <Text variant="caption" color="textMuted" center style={{ marginTop: 6 }}>
             Re-maps your plan from everything Polaris has learned about you
