@@ -53,65 +53,65 @@ export interface Palette {
 }
 
 const lightPalette: Palette = {
-  background: '#FBF8F2',
-  backgroundAlt: '#F4EEE4',
+  background: '#F7F5F0',
+  backgroundAlt: '#EFEDE6',
   surface: '#FFFFFF',
-  surfaceSunken: '#F5F0E8',
-  border: '#E9E1D4',
-  borderStrong: '#DCD2C2',
+  surfaceSunken: '#F0EEE8',
+  border: '#E5E2D9',
+  borderStrong: '#D6D2C7',
 
-  text: '#1C1813',
-  textSecondary: '#5E554A',
-  textMuted: '#9A8F80',
+  text: '#15140F',
+  textSecondary: '#54514A',
+  textMuted: '#918C81',
   onAccent: '#FFFFFF',
 
-  accent: '#BB5A37',
-  accentPressed: '#A24A2B',
-  accentSoft: '#F4E2D7',
+  accent: '#B0542E',
+  accentPressed: '#974624',
+  accentSoft: '#EBE5DD',
   accentSoftText: '#8A4226',
 
   bubbleAssistant: '#FFFFFF',
-  bubbleUser: '#F2E1D5',
-  bubbleUserText: '#3A2114',
+  bubbleUser: '#EAE6DC',
+  bubbleUserText: '#272219',
 
   success: '#4E7A53',
-  successSoft: '#E3EEE2',
-  warning: '#B07D26',
-  danger: '#B0463B',
+  successSoft: '#E6ECE2',
+  warning: '#A87C2C',
+  danger: '#A8463B',
 
-  skeleton: '#ECE5D9',
-  scrim: 'rgba(28, 24, 19, 0.42)',
+  skeleton: '#ECE9E1',
+  scrim: 'rgba(20, 18, 14, 0.45)',
 };
 
 const darkPalette: Palette = {
-  background: '#13100C',
-  backgroundAlt: '#1A1611',
-  surface: '#1D1813',
-  surfaceSunken: '#221C16',
-  border: '#2E2720',
-  borderStrong: '#3A322A',
+  background: '#100F0D',
+  backgroundAlt: '#161412',
+  surface: '#191715',
+  surfaceSunken: '#201D1A',
+  border: '#2A2724',
+  borderStrong: '#37332E',
 
-  text: '#F3ECE0',
-  textSecondary: '#B7AC9D',
-  textMuted: '#7E7466',
-  onAccent: '#1A0E08',
+  text: '#F3F0E9',
+  textSecondary: '#ACA69B',
+  textMuted: '#7A746A',
+  onAccent: '#15110D',
 
-  accent: '#D27A4E',
-  accentPressed: '#E08C61',
-  accentSoft: '#2E2018',
-  accentSoftText: '#E8A079',
+  accent: '#C97A50',
+  accentPressed: '#DA8C61',
+  accentSoft: '#241C16',
+  accentSoftText: '#E2A37C',
 
-  bubbleAssistant: '#1D1813',
-  bubbleUser: '#2C2017',
-  bubbleUserText: '#F2DECB',
+  bubbleAssistant: '#191715',
+  bubbleUser: '#221F1B',
+  bubbleUserText: '#EFE9DF',
 
   success: '#76A87B',
-  successSoft: '#1E2A1F',
-  warning: '#D2A24E',
-  danger: '#D77468',
+  successSoft: '#1C271D',
+  warning: '#CFA052',
+  danger: '#D2685C',
 
-  skeleton: '#241E18',
-  scrim: 'rgba(0, 0, 0, 0.6)',
+  skeleton: '#221E1A',
+  scrim: 'rgba(0, 0, 0, 0.62)',
 };
 
 export const palettes = { light: lightPalette, dark: darkPalette } as const;
@@ -134,17 +134,17 @@ export interface Gradients {
 }
 
 const lightGradients: Gradients = {
-  ambient: ['#FCFAF4', '#F7F0E4', '#F0E6D5'],
-  aura: 'rgba(187, 90, 55, 0.10)',
-  accent: ['#C2643B', '#A8492A'],
-  sheen: ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0)'],
+  ambient: ['#F8F6F1', '#F5F3EC', '#F1EFE8'],
+  aura: 'transparent',
+  accent: ['#B0542E', '#974624'],
+  sheen: ['rgba(255,255,255,0.85)', 'rgba(255,255,255,0)'],
 };
 
 const darkGradients: Gradients = {
-  ambient: ['#0E0B07', '#15110B', '#1C140D'],
-  aura: 'rgba(210, 122, 78, 0.18)',
-  accent: ['#E08C61', '#C9683F'],
-  sheen: ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)'],
+  ambient: ['#100F0D', '#131110', '#151312'],
+  aura: 'transparent',
+  accent: ['#DA8C61', '#C97A50'],
+  sheen: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0)'],
 };
 
 export const gradients = { light: lightGradients, dark: darkGradients } as const;

@@ -6,15 +6,14 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { AuroraBackground, Button, Divider, GlassCard, MentorAvatar, Text } from '@/components/ui';
+import { Button, Divider, MentorAvatar, Surface, Text } from '@/components/ui';
 import { useAuth } from '@/store';
 import { isConfigured } from '@/lib/config';
 import { haptics } from '@/lib/haptics';
 
 /**
- * Welcome / auth — the first taste of "Aurora Glass": a living gradient with a
- * frosted-glass panel floating over it. One-tap guest start, Continue with
- * Google, or email. Calm, premium, alive.
+ * Welcome / auth — "Liquid Ink": near-monochrome, typography-led, no glass.
+ * The wordmark and the type carry the weight; motion is the only flourish.
  */
 export default function SignIn() {
   const theme = useTheme();
@@ -43,26 +42,29 @@ export default function SignIn() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <AuroraBackground />
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{ flex: 1, justifyContent: 'space-between', padding: theme.spacing.xl }}
         >
-          {/* Brand */}
-          <Animated.View entering={FadeIn.duration(600)} style={{ marginTop: theme.spacing.huge }}>
-            <MentorAvatar size={66} />
-            <Text variant="display" style={{ marginTop: theme.spacing.xl }}>
+          {/* Brand — type does the talking */}
+          <Animated.View entering={FadeIn.duration(650)} style={{ marginTop: theme.spacing.huge }}>
+            <MentorAvatar size={56} />
+            <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 44, lineHeight: 48, letterSpacing: -0.8, color: theme.colors.text, marginTop: theme.spacing.xl }}>
               Polaris
             </Text>
-            <Text variant="body" color="textSecondary" style={{ marginTop: theme.spacing.sm, maxWidth: 320 }}>
-              Your AI mentor for any goal. It learns who you are, maps the path, and walks it with
-              you — from 0 to 100.
+            <Text
+              variant="body"
+              color="textSecondary"
+              style={{ marginTop: theme.spacing.md, maxWidth: 330, fontSize: 17, lineHeight: 26 }}
+            >
+              An AI mentor that learns who you are, maps the path, and walks it with you — from 0 to
+              100.
             </Text>
           </Animated.View>
 
-          {/* Glass auth panel */}
+          {/* Actions — calm, flat, deliberate */}
           <Animated.View entering={FadeInUp.duration(600).delay(120)}>
             {!isConfigured ? (
               <View
@@ -79,77 +81,75 @@ export default function SignIn() {
               </View>
             ) : null}
 
-            <GlassCard>
-              {mode === 'welcome' ? (
-                <View style={{ gap: theme.spacing.md }}>
-                  <Button
-                    label="Start your journey"
-                    fullWidth
-                    loading={busy === 'guest'}
-                    onPress={() => run('guest', startAnonymously)}
-                  />
-                  <GoogleButton loading={busy === 'google'} onPress={() => run('google', signInWithGoogle)} />
+            {mode === 'welcome' ? (
+              <View style={{ gap: theme.spacing.md }}>
+                <Button
+                  label="Start your journey"
+                  fullWidth
+                  loading={busy === 'guest'}
+                  onPress={() => run('guest', startAnonymously)}
+                />
+                <GoogleButton loading={busy === 'google'} onPress={() => run('google', signInWithGoogle)} />
 
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 2 }}>
-                    <View style={{ flex: 1 }}>
-                      <Divider />
-                    </View>
-                    <Text variant="caption" color="textMuted" style={{ marginHorizontal: theme.spacing.md }}>
-                      or
-                    </Text>
-                    <View style={{ flex: 1 }}>
-                      <Divider />
-                    </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4 }}>
+                  <View style={{ flex: 1 }}>
+                    <Divider />
                   </View>
-
-                  <Pressable
-                    onPress={() => {
-                      haptics.selection();
-                      setMode('email');
-                    }}
-                    style={{ alignItems: 'center', paddingVertical: theme.spacing.xs }}
-                  >
-                    <Text variant="subheading" color="text">
-                      Continue with email
-                    </Text>
-                  </Pressable>
+                  <Text variant="caption" color="textMuted" style={{ marginHorizontal: theme.spacing.md }}>
+                    or
+                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Divider />
+                  </View>
                 </View>
-              ) : (
-                <View style={{ gap: theme.spacing.md }}>
-                  <Field placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
-                  <Field placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-                  <Button
-                    label={isSignUp ? 'Create account' : 'Sign in'}
-                    fullWidth
-                    loading={busy === 'email'}
-                    onPress={() =>
-                      run('email', () =>
-                        isSignUp
-                          ? signUpWithPassword(email.trim(), password)
-                          : signInWithPassword(email.trim(), password),
-                      )
-                    }
-                  />
-                  <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
-                    <Text variant="callout" color="textSecondary">
-                      {isSignUp ? 'Already have an account?' : 'New here?'}
-                    </Text>
-                    <Text variant="callout" color="accent" onPress={() => setIsSignUp((v) => !v)}>
-                      {isSignUp ? 'Sign in' : 'Create one'}
-                    </Text>
-                  </View>
-                  <Text variant="caption" color="textMuted" center onPress={() => setMode('welcome')}>
-                    Back
+
+                <Pressable
+                  onPress={() => {
+                    haptics.selection();
+                    setMode('email');
+                  }}
+                  style={{ alignItems: 'center', paddingVertical: theme.spacing.sm }}
+                >
+                  <Text variant="subheading" color="text">
+                    Continue with email
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Surface bordered padding="xl" style={{ gap: theme.spacing.md }}>
+                <Field placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+                <Field placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
+                <Button
+                  label={isSignUp ? 'Create account' : 'Sign in'}
+                  fullWidth
+                  loading={busy === 'email'}
+                  onPress={() =>
+                    run('email', () =>
+                      isSignUp
+                        ? signUpWithPassword(email.trim(), password)
+                        : signInWithPassword(email.trim(), password),
+                    )
+                  }
+                />
+                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+                  <Text variant="callout" color="textSecondary">
+                    {isSignUp ? 'Already have an account?' : 'New here?'}
+                  </Text>
+                  <Text variant="callout" color="accent" onPress={() => setIsSignUp((v) => !v)}>
+                    {isSignUp ? 'Sign in' : 'Create one'}
                   </Text>
                 </View>
-              )}
-
-              {error ? (
-                <Text variant="caption" tint={theme.colors.danger} center style={{ marginTop: theme.spacing.md }}>
-                  {error}
+                <Text variant="caption" color="textMuted" center onPress={() => setMode('welcome')}>
+                  Back
                 </Text>
-              ) : null}
-            </GlassCard>
+              </Surface>
+            )}
+
+            {error ? (
+              <Text variant="caption" tint={theme.colors.danger} center style={{ marginTop: theme.spacing.md }}>
+                {error}
+              </Text>
+            ) : null}
 
             <Text variant="caption" color="textMuted" center style={{ marginTop: theme.spacing.lg }}>
               Free to start. No pressure, no spam.
@@ -171,7 +171,7 @@ function GoogleButton({ onPress, loading }: { onPress: () => void; loading: bool
       }}
       disabled={loading}
       style={{
-        height: 48,
+        height: 52,
         borderRadius: theme.radii.pill,
         backgroundColor: theme.colors.surface,
         borderWidth: 1,
@@ -200,7 +200,7 @@ function Field(props: React.ComponentProps<typeof TextInput>) {
       autoCorrect={false}
       {...props}
       style={{
-        backgroundColor: theme.colors.surface,
+        backgroundColor: theme.colors.surfaceSunken,
         borderWidth: 1,
         borderColor: theme.colors.border,
         borderRadius: theme.radii.md,
