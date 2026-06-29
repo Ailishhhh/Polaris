@@ -138,9 +138,14 @@ export default function Onboarding() {
       });
       haptics.success();
       router.replace('/(tabs)');
-    } catch {
+    } catch (e) {
       setTyping(false);
-      setError('I had trouble building your roadmap. Check the backend connection and try again.');
+      const detail = e instanceof Error ? e.message : '';
+      setError(
+        detail
+          ? `Couldn't build your roadmap. ${detail}`
+          : 'Couldn\'t build your roadmap. Check your connection and try again.',
+      );
     }
   };
 

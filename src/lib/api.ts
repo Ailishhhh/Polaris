@@ -107,6 +107,49 @@ export async function streamMentorReply(
   }
 }
 
+export interface RoadmapDraftPhase {
+  title: string;
+  description: string;
+  milestones: { title: string; description: string }[];
+}
+
+/**
+ * POST JSON to the backend with an abort timeout and a clear, actionable error
+ * if the server can't be reached (the #1 local-dev failure: API_URL pointing at
+ * localhost so the phone can't reach the laptop, or a firewall blocking it).
+ */
+async function postJson<T>(path: string, body: unknown, timeoutMs = 60000): Promise<T> {
+  const headers = await authHeaders();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${config.apiUrl}${path}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new ApiError(`Backend returned ${res.status} for ${path}`, res.status);
+    }
+    return (await res.json()) as T;
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    const name = err instanceof Error ? err.name : '';
+    if (name === 'AbortError') {
+      throw new ApiError(
+        `The mentor backend didn't respond in time. Make sure it's running and that ` +
+          `EXPO_PUBLIC_API_URL (${config.apiUrl}) is reachable from your phone.`,
+      );
+    }
+    throw new ApiError(
+      `Couldn't reach the mentor backend at ${config.apiUrl}. Check it's running and on the same network.`,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Asks the backend to turn a goal + onboarding context into a structured
  * roadmap (phases -> milestones). Returns parsed JSON.
@@ -116,36 +159,16 @@ export async function generateRoadmap(params: {
   category: string;
   context: GoalContext;
 }): Promise<{ overview: string; phases: RoadmapDraftPhase[] }> {
-  const headers = await authHeaders();
-  const res = await fetch(`${config.apiUrl}/api/roadmap`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) throw new ApiError(`Roadmap generation failed (${res.status})`, res.status);
-  return (await res.json()) as { overview: string; phases: RoadmapDraftPhase[] };
-}
-
-export interface RoadmapDraftPhase {
-  title: string;
-  description: string;
-  milestones: { title: string; description: string }[];
+  return postJson('/api/roadmap', params, 90000);
 }
 
 /** Generates today's tasks from the roadmap + recent progress. */
 export async function generateDailyTasks(params: {
   memory: MentorMemory;
 }): Promise<{ title: string; detail: string; milestoneHint: string | null }[]> {
-  const headers = await authHeaders();
-  const res = await fetch(`${config.apiUrl}/api/tasks`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) throw new ApiError(`Task generation failed (${res.status})`, res.status);
-  const data = (await res.json()) as {
+  const data = await postJson<{
     tasks: { title: string; detail: string; milestoneHint: string | null }[];
-  };
+  }>('/api/tasks', params);
   return data.tasks;
 }
 
@@ -155,14 +178,7 @@ export async function sendCheckIn(params: {
   mood: number | null;
   note: string;
 }): Promise<{ reply: string }> {
-  const headers = await authHeaders();
-  const res = await fetch(`${config.apiUrl}/api/checkin`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) throw new ApiError(`Check-in failed (${res.status})`, res.status);
-  return (await res.json()) as { reply: string };
+  return postJson<{ reply: string }>('/api/checkin', params);
 }
 
 export type { Roadmap };

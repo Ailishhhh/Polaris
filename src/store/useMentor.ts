@@ -133,6 +133,14 @@ export const useMentor = create<MentorState>((set, get) => ({
   completeOnboarding: async (userId, input) => {
     set({ busy: true, error: null });
     try {
+      // Generate the roadmap FIRST (the network step). If this fails we haven't
+      // written anything yet, so a retry won't create duplicate goals.
+      const draft = await generateRoadmap({
+        goalTitle: input.title,
+        category: input.category,
+        context: input.context,
+      });
+
       if (input.displayName || input.age) {
         await db.updateProfile(userId, {
           displayName: input.displayName ?? undefined,
@@ -142,12 +150,6 @@ export const useMentor = create<MentorState>((set, get) => ({
       const goal = await db.createGoal(userId, {
         title: input.title,
         summary: input.summary,
-        category: input.category,
-        context: input.context,
-      });
-
-      const draft = await generateRoadmap({
-        goalTitle: input.title,
         category: input.category,
         context: input.context,
       });
@@ -175,8 +177,12 @@ export const useMentor = create<MentorState>((set, get) => ({
         streak: emptyStreak,
       });
 
-      // Generate today's first tasks in the background.
-      await get().refreshTodayTasks();
+      // First daily tasks are a nice-to-have — never fail onboarding over them.
+      try {
+        await get().refreshTodayTasks();
+      } catch (taskErr) {
+        console.warn('Daily task generation failed (non-fatal):', taskErr);
+      }
     } catch (e) {
       set({ error: errMsg(e) });
       throw e;
