@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { KeyboardAvoidingView, Platform, Switch, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import { useTheme } from '@/theme';
 import { Appear, Button, Divider, IconButton, MentorAvatar, Screen, Surface, Text } from '@/components/ui';
 import { useAuth, useMentor } from '@/store';
 import { haptics } from '@/lib/haptics';
+import { disableDailyReminder, enableDailyReminder, isReminderEnabled } from '@/lib/notifications';
 
 /**
  * Account screen. For guests it's a warm "secure your journey" upgrade (email +
@@ -29,6 +30,27 @@ export default function AccountScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [reminderOn, setReminderOn] = useState(false);
+
+  useEffect(() => {
+    isReminderEnabled().then(setReminderOn);
+  }, []);
+
+  const toggleReminder = async (value: boolean) => {
+    haptics.selection();
+    if (value) {
+      const ok = await enableDailyReminder(19, 0);
+      if (!ok) {
+        setReminderOn(false);
+        setError('Enable notifications in your phone settings to get daily reminders.');
+        return;
+      }
+      setReminderOn(true);
+    } else {
+      await disableDailyReminder();
+      setReminderOn(false);
+    }
+  };
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
 
@@ -139,6 +161,26 @@ export default function AccountScreen() {
                   Mentoring you toward: {goal.title}
                 </Text>
               ) : null}
+            </Surface>
+          </Appear>
+        ) : null}
+
+        {!done ? (
+          <Appear index={1}>
+            <Surface elevated={1} style={{ marginTop: theme.spacing.lg, flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="notifications-outline" size={20} color={theme.colors.accent} />
+              <View style={{ flex: 1, marginLeft: theme.spacing.md }}>
+                <Text variant="subheading">Daily reminder</Text>
+                <Text variant="caption" color="textMuted" style={{ marginTop: 2 }}>
+                  A gentle nudge each evening to keep your streak alive.
+                </Text>
+              </View>
+              <Switch
+                value={reminderOn}
+                onValueChange={toggleReminder}
+                trackColor={{ false: theme.colors.surfaceSunken, true: theme.colors.accent }}
+                thumbColor="#FFFFFF"
+              />
             </Surface>
           </Appear>
         ) : null}

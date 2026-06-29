@@ -6,8 +6,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider, useAppFonts, useTheme } from '@/theme';
 import { useAuth, useMentor } from '@/store';
+import { ensureNotificationsSetup } from '@/lib/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+ensureNotificationsSetup();
 
 function Navigator() {
   const theme = useTheme();
