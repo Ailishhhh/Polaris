@@ -1,9 +1,10 @@
-import { KeyboardAvoidingView, Platform, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { MentorAvatar, Text } from '@/components/ui';
+import { Appear, MentorAvatar, Text } from '@/components/ui';
 import { Thread, Composer } from '@/components/chat';
 import { useMentor } from '@/store';
 
@@ -57,31 +58,40 @@ export default function ChatScreen() {
             onOpenPlan={() => router.push('/(tabs)/plan')}
             header={
               messages.length === 0 ? (
-                <View style={{ paddingTop: theme.spacing.xl }}>
-                  <Text variant="title">Where do you want to go today?</Text>
-                  <Text variant="callout" color="textSecondary" style={{ marginTop: theme.spacing.sm }}>
-                    Ask me anything about your goal. I remember your roadmap, your progress, and where
-                    you left off.
-                  </Text>
-                  <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
-                    {starters.map((s) => (
-                      <Text
-                        key={s}
-                        variant="callout"
-                        color="accent"
-                        onPress={() => sendMessage(s)}
-                        style={{
-                          borderWidth: 1,
-                          borderColor: theme.colors.border,
-                          borderRadius: theme.radii.md,
-                          padding: theme.spacing.md,
-                        }}
-                      >
-                        {s}
-                      </Text>
-                    ))}
+                <Appear>
+                  <View style={{ paddingTop: theme.spacing.xl }}>
+                    <Text variant="title">Where do you want to go today?</Text>
+                    <Text variant="callout" color="textSecondary" style={{ marginTop: theme.spacing.sm }}>
+                      Ask me anything — your goal, a concept, a hard day. I remember your roadmap,
+                      your progress, and where you left off.
+                    </Text>
+                    <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
+                      {starters.map((s) => (
+                        <Pressable
+                          key={s}
+                          onPress={() => sendMessage(s)}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: theme.spacing.md,
+                            backgroundColor: theme.colors.surface,
+                            borderWidth: 1,
+                            borderColor: theme.colors.border,
+                            borderRadius: theme.radii.lg,
+                            padding: theme.spacing.lg,
+                            ...theme.elevation(1),
+                          }}
+                        >
+                          <Ionicons name="sparkles-outline" size={16} color={theme.colors.accent} />
+                          <Text variant="callout" tint={theme.colors.text} style={{ flex: 1 }}>
+                            {s}
+                          </Text>
+                          <Ionicons name="arrow-forward" size={15} color={theme.colors.textMuted} />
+                        </Pressable>
+                      ))}
+                    </View>
                   </View>
-                </View>
+                </Appear>
               ) : null
             }
           />

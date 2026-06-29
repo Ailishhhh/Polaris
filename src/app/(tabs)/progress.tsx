@@ -91,27 +91,33 @@ export default function ProgressScreen() {
         </Appear>
       ) : null}
 
-      <Surface elevated={2} style={{ alignItems: 'center', paddingVertical: theme.spacing.xxl }}>
-        <MomentumRing value={momentum} size={150} />
-        <Text variant="callout" color="textSecondary" center style={{ marginTop: theme.spacing.lg, maxWidth: 260 }}>
-          {momentum < 15
-            ? 'Every journey starts with a single step. Keep showing up.'
-            : momentum < 60
-              ? "You're building real momentum. Stay consistent."
-              : 'Incredible progress — your goal is in sight.'}
-        </Text>
-      </Surface>
+      <Appear index={1}>
+        <Surface elevated={2} style={{ alignItems: 'center', paddingVertical: theme.spacing.xxl }}>
+          <MomentumRing value={momentum} size={150} />
+          <Text variant="callout" color="textSecondary" center style={{ marginTop: theme.spacing.lg, maxWidth: 260 }}>
+            {momentum < 15
+              ? 'Every journey starts with a single step. Keep showing up.'
+              : momentum < 60
+                ? "You're building real momentum. Stay consistent."
+                : 'Incredible progress — your goal is in sight.'}
+          </Text>
+        </Surface>
+      </Appear>
 
-      <View style={{ flexDirection: 'row', gap: theme.spacing.md, marginTop: theme.spacing.lg }}>
-        <Stat value={`${streak.current}`} label="day streak" icon="flame-outline" />
-        <Stat value={`${streak.longest}`} label="longest streak" icon="trophy-outline" />
-        <Stat value={`${doneMilestones}/${milestones.length}`} label="milestones" icon="flag-outline" />
-      </View>
+      <Appear index={2}>
+        <View style={{ flexDirection: 'row', gap: theme.spacing.md, marginTop: theme.spacing.lg }}>
+          <Stat value={`${streak.current}`} label="day streak" icon="flame-outline" />
+          <Stat value={`${streak.longest}`} label="longest streak" icon="trophy-outline" />
+          <Stat value={`${doneMilestones}/${milestones.length}`} label="milestones" icon="flag-outline" />
+        </View>
+      </Appear>
 
       {goal ? (
-        <View style={{ marginTop: theme.spacing.lg }}>
-          <InsightCard />
-        </View>
+        <Appear index={3}>
+          <View style={{ marginTop: theme.spacing.lg }}>
+            <InsightCard />
+          </View>
+        </Appear>
       ) : null}
 
       {roadmap ? (
