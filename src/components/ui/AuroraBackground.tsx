@@ -57,7 +57,6 @@ function Blob({
 export function AuroraBackground() {
   const theme = useTheme();
   const { width, height } = useWindowDimensions();
-  const dark = theme.scheme === 'dark';
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -77,7 +76,7 @@ export function AuroraBackground() {
         duration={18000}
       />
       <Blob
-        colors={[dark ? '#3A4A6B' : '#CBB89B', 'transparent']}
+        colors={[theme.gradients.auraAlt, 'transparent']}
         size={width * 0.7}
         from={{ x: width * 0.1, y: height * 0.6 }}
         to={{ x: width * 0.4, y: height * 0.75 }}

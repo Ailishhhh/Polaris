@@ -53,65 +53,65 @@ export interface Palette {
 }
 
 const lightPalette: Palette = {
-  background: '#F7F5F0',
-  backgroundAlt: '#EFEDE6',
+  background: '#F6F4FF',
+  backgroundAlt: '#EEE9FF',
   surface: '#FFFFFF',
-  surfaceSunken: '#F0EEE8',
-  border: '#E5E2D9',
-  borderStrong: '#D6D2C7',
+  surfaceSunken: '#F1EDFC',
+  border: '#E6E1F6',
+  borderStrong: '#D6CFEE',
 
-  text: '#15140F',
-  textSecondary: '#54514A',
-  textMuted: '#918C81',
+  text: '#191334',
+  textSecondary: '#574F76',
+  textMuted: '#928BB2',
   onAccent: '#FFFFFF',
 
-  accent: '#B0542E',
-  accentPressed: '#974624',
-  accentSoft: '#EBE5DD',
-  accentSoftText: '#8A4226',
+  accent: '#6D4DF2',
+  accentPressed: '#5A3CE0',
+  accentSoft: '#EAE3FF',
+  accentSoftText: '#5A3CE0',
 
   bubbleAssistant: '#FFFFFF',
-  bubbleUser: '#EAE6DC',
-  bubbleUserText: '#272219',
+  bubbleUser: '#E9E2FF',
+  bubbleUserText: '#2A2150',
 
-  success: '#4E7A53',
-  successSoft: '#E6ECE2',
-  warning: '#A87C2C',
-  danger: '#A8463B',
+  success: '#1F9D74',
+  successSoft: '#E1F4EC',
+  warning: '#C98A2E',
+  danger: '#E0556B',
 
-  skeleton: '#ECE9E1',
-  scrim: 'rgba(20, 18, 14, 0.45)',
+  skeleton: '#ECE8FB',
+  scrim: 'rgba(18, 12, 40, 0.5)',
 };
 
 const darkPalette: Palette = {
-  background: '#100F0D',
-  backgroundAlt: '#161412',
-  surface: '#191715',
-  surfaceSunken: '#201D1A',
-  border: '#2A2724',
-  borderStrong: '#37332E',
+  background: '#080612',
+  backgroundAlt: '#0E0B1E',
+  surface: '#151127',
+  surfaceSunken: '#1C1733',
+  border: '#2A2442',
+  borderStrong: '#3B3458',
 
-  text: '#F3F0E9',
-  textSecondary: '#ACA69B',
-  textMuted: '#7A746A',
-  onAccent: '#15110D',
+  text: '#F1EDFF',
+  textSecondary: '#B6ADD2',
+  textMuted: '#7D759A',
+  onAccent: '#0A0716',
 
-  accent: '#C97A50',
-  accentPressed: '#DA8C61',
-  accentSoft: '#241C16',
-  accentSoftText: '#E2A37C',
+  accent: '#8B6CFF',
+  accentPressed: '#A488FF',
+  accentSoft: '#1F1838',
+  accentSoftText: '#BBA8FF',
 
-  bubbleAssistant: '#191715',
-  bubbleUser: '#221F1B',
-  bubbleUserText: '#EFE9DF',
+  bubbleAssistant: '#151127',
+  bubbleUser: '#241B42',
+  bubbleUserText: '#EDE7FF',
 
-  success: '#76A87B',
-  successSoft: '#1C271D',
-  warning: '#CFA052',
-  danger: '#D2685C',
+  success: '#46D9A6',
+  successSoft: '#0F2A22',
+  warning: '#FFC15E',
+  danger: '#FF6B81',
 
-  skeleton: '#221E1A',
-  scrim: 'rgba(0, 0, 0, 0.62)',
+  skeleton: '#1A1532',
+  scrim: 'rgba(3, 2, 10, 0.7)',
 };
 
 export const palettes = { light: lightPalette, dark: darkPalette } as const;
@@ -123,28 +123,32 @@ export type ColorSchemeName = keyof typeof palettes;
  * gives the app depth and a hand-crafted feel.
  */
 export interface Gradients {
-  /** Full-screen backdrop (top -> bottom), three warm stops. */
+  /** Full-screen backdrop (top -> bottom), three stops. */
   ambient: readonly [string, string, string];
-  /** Soft accent glow placed behind hero content (already alpha-baked). */
+  /** Primary glow (already alpha-baked). */
   aura: string;
-  /** The clay accent gradient (buttons, the momentum arc, the avatar). */
+  /** Secondary glow for the nebula effect (a different hue). */
+  auraAlt: string;
+  /** The accent gradient (buttons, the momentum arc, the avatar). */
   accent: readonly [string, string];
   /** A faint sheen used on premium cards. */
   sheen: readonly [string, string];
 }
 
 const lightGradients: Gradients = {
-  ambient: ['#F8F6F1', '#F5F3EC', '#F1EFE8'],
-  aura: 'transparent',
-  accent: ['#B0542E', '#974624'],
-  sheen: ['rgba(255,255,255,0.85)', 'rgba(255,255,255,0)'],
+  ambient: ['#FBF9FF', '#F3EEFF', '#EAE2FF'],
+  aura: 'rgba(109, 77, 242, 0.16)',
+  auraAlt: 'rgba(196, 77, 242, 0.12)',
+  accent: ['#6D4DF2', '#A24DF2'],
+  sheen: ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0)'],
 };
 
 const darkGradients: Gradients = {
-  ambient: ['#100F0D', '#131110', '#151312'],
-  aura: 'transparent',
-  accent: ['#DA8C61', '#C97A50'],
-  sheen: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0)'],
+  ambient: ['#080612', '#0D0A20', '#150E2A'],
+  aura: 'rgba(139, 108, 255, 0.30)',
+  auraAlt: 'rgba(255, 92, 170, 0.22)',
+  accent: ['#8B6CFF', '#C86CFF'],
+  sheen: ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0)'],
 };
 
 export const gradients = { light: lightGradients, dark: darkGradients } as const;

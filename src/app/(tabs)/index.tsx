@@ -3,7 +3,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { Appear, Button, Screen, Surface, Text, Divider } from '@/components/ui';
+import { Appear, Button, Pill, Screen, Surface, Text, Divider } from '@/components/ui';
 import { TaskCard } from '@/components/artifacts';
 import { DailyBriefing } from '@/components/ai';
 import { useMentor } from '@/store';
@@ -18,35 +18,6 @@ function greeting(): string {
 
 const prettyDate = () =>
   new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-
-/** Editorial serif title used for section headers in the Liquid Ink language. */
-function SectionTitle({ children }: { children: string }) {
-  const theme = useTheme();
-  return (
-    <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 22, lineHeight: 28, letterSpacing: -0.3, color: theme.colors.text }}>
-      {children}
-    </Text>
-  );
-}
-
-function EditorialStat({ value, label }: { value: string; label: string }) {
-  const theme = useTheme();
-  return (
-    <View style={{ flex: 1 }}>
-      <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 28, lineHeight: 32, color: theme.colors.text }}>
-        {value}
-      </Text>
-      <Text variant="overline" color="textMuted" style={{ marginTop: 3 }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-function StatRule() {
-  const theme = useTheme();
-  return <View style={{ width: 1, height: 34, backgroundColor: theme.colors.border, marginHorizontal: theme.spacing.lg }} />;
-}
 
 export default function Today() {
   const theme = useTheme();
@@ -85,25 +56,14 @@ export default function Today() {
           {greeting()}
           {profile?.displayName ? `, ${profile.displayName}` : ''}.
         </Text>
-      </View>
-
-      {/* Editorial monochrome stats — serif numerals, hairline rules. */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginTop: theme.spacing.xl,
-          marginBottom: theme.spacing.xl,
-          paddingTop: theme.spacing.lg,
-          borderTopWidth: 1,
-          borderTopColor: theme.colors.border,
-        }}
-      >
-        <EditorialStat value={`${streak.current}`} label="DAY STREAK" />
-        <StatRule />
-        <EditorialStat value={`${momentum}`} label="MOMENTUM" />
-        <StatRule />
-        <EditorialStat value={`${doneCount}/${todayTasks.length || 0}`} label="DONE TODAY" />
+        <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.lg, marginBottom: theme.spacing.xs }}>
+          <Pill
+            label={`${streak.current} day streak`}
+            tone={streak.current > 0 ? 'accent' : 'neutral'}
+            icon={<Ionicons name="flame" size={13} color={streak.current > 0 ? theme.colors.accentSoftText : theme.colors.textMuted} />}
+          />
+          <Pill label={`${momentum} momentum`} tone="success" />
+        </View>
       </View>
 
       {goal ? (
@@ -115,11 +75,11 @@ export default function Today() {
       ) : null}
 
       {currentPhase ? (
-        <Surface bordered style={{ marginBottom: theme.spacing.lg }}>
+        <Surface elevated={1} style={{ marginBottom: theme.spacing.lg }}>
           <Text variant="overline" color="textMuted">
             CURRENT FOCUS
           </Text>
-          <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 20, lineHeight: 26, color: theme.colors.text, marginTop: 6 }}>
+          <Text variant="heading" style={{ marginTop: 4 }}>
             {currentPhase.title}
           </Text>
           {activeMilestone ? (
@@ -134,7 +94,7 @@ export default function Today() {
       ) : null}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
-        <SectionTitle>Today</SectionTitle>
+        <Text variant="heading">Today</Text>
         <View style={{ flex: 1 }} />
         {todayTasks.length > 0 ? (
           <Text variant="caption" color="textMuted">
@@ -214,8 +174,8 @@ function CheckInCard() {
   }
 
   return (
-    <Surface bordered>
-      <SectionTitle>Daily check-in</SectionTitle>
+    <Surface elevated={1}>
+      <Text variant="heading">Daily check-in</Text>
       <Text variant="callout" color="textSecondary" style={{ marginTop: 4 }}>
         How did today go? Your mentor adapts to this.
       </Text>
