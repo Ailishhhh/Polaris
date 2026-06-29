@@ -58,6 +58,26 @@ export function Button({
     danger: '#FFFFFF',
   };
 
+  // The hero action glows in its own accent so it's unmistakably primary.
+  const glow: Record<Variant, ViewStyle> = {
+    primary: {
+      shadowColor: theme.colors.accent,
+      shadowOpacity: 0.45,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 8,
+    },
+    danger: {
+      shadowColor: theme.colors.danger,
+      shadowOpacity: 0.35,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 5 },
+      elevation: 6,
+    },
+    secondary: {},
+    ghost: {},
+  };
+
   return (
     <AnimatedPressable
       accessibilityRole="button"
@@ -81,6 +101,7 @@ export function Button({
           opacity: isDisabled ? 0.5 : 1,
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
         },
+        isDisabled ? null : glow[variant],
         animatedStyle,
         style,
       ]}
