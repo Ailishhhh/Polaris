@@ -7,15 +7,30 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://nqhpmolsnovmawldduay.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xaHBtb2xzbm92bWF3bGRkdWF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDg3NTIsImV4cCI6MjA5ODIyNDc1Mn0.b6BAvgXAAdnEYl3G9MnKhlluO0toPeUZ84Rj1pmhYGs",
+        "EXPO_PUBLIC_API_URL": "https://polaris-mentor-api.onrender.com"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://nqhpmolsnovmawldduay.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xaHBtb2xzbm92bWF3bGRkdWF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDg3NTIsImV4cCI6MjA5ODIyNDc1Mn0.b6BAvgXAAdnEYl3G9MnKhlluO0toPeUZ84Rj1pmhYGs",
+        "EXPO_PUBLIC_API_URL": "https://polaris-mentor-api.onrender.com"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "android": { "buildType": "app-bundle" }
+      "android": { "buildType": "app-bundle" },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://nqhpmolsnovmawldduay.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xaHBtb2xzbm92bWF3bGRkdWF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDg3NTIsImV4cCI6MjA5ODIyNDc1Mn0.b6BAvgXAAdnEYl3G9MnKhlluO0toPeUZ84Rj1pmhYGs",
+        "EXPO_PUBLIC_API_URL": "https://polaris-mentor-api.onrender.com"
+      }
     }
   },
   "submit": {
